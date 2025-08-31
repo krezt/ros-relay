@@ -37,6 +37,16 @@ function listRooms() {
   return out;
 }
 
+function maybeStartMatch(roomId) {
+  const set = rooms.get(roomId);
+  if (!set || set.size !== 2) return;
+  const [a, b] = [...set];
+  // Tell each side who they are (A → host, B → guest in your client)
+  send(a, { kind: 'match', roomId, you: 'A' });
+  send(b, { kind: 'match', roomId, you: 'B' });
+}
+
+
 server.on('upgrade', (req, socket, head) => {
   if (!req.url.startsWith('/ws')) { socket.destroy(); return; }
   wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
@@ -51,9 +61,22 @@ wss.on('connection', (ws, req) => {
 
     // minimal lobby API your client expects
     if (msg.kind === 'set_name' && typeof msg.name === 'string') { ws._name = msg.name; return; }
-    if (msg.kind === 'list_rooms') { send(ws, { kind: 'rooms', list: listRooms() }); return; }
-    if (msg.kind === 'create_room') { const id = msg.id || Math.random().toString(36).slice(2, 8); joinRoom(ws, id); send(ws, { kind: 'room_created', id }); return; }
-    if (msg.kind === 'join_room' && msg.id) { joinRoom(ws, msg.id); send(ws, { kind: 'room_joined', id: msg.id }); return; }
+    if (msg.kind === 'list_rooms') {
+   const rooms = listRooms().map(r => ({ id: r.id, players: r.count }));
+   send(ws, { kind: 'rooms', rooms });
+   return;
+    if (msg.kind === 'create_room') { const id = msg.id || Math.random().toString(36).slice(2, 8); joinRoom(ws, id); send(ws, { kind: 'room_created', id }); maybeStartMatch(id); return; }
+    if (msg.kind === 'join_room' && msg.id) { joinRoom(ws, msg.id); send(ws, { kind: 'room_joined', id: msg.id }); maybeStartMatch(id); return; }
+      if (msg.kind === 'set_name' && typeof msg.name === 'string') {
+  ws._name = msg.name;
+  for (const peer of roomSet(ws._room)) {
+    if (peer !== ws && peer.readyState === WebSocket.OPEN) {
+      send(peer, { kind: 'name', name: msg.name });
+    }
+  }
+  return;
+}
+
 
     // default: relay to others in the same room
     const peers = rooms.get(ws._room) || new Set();
