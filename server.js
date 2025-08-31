@@ -1,154 +1,205 @@
-const express = require("express");
-const http = require("http");
-const WebSocket = require("ws");
+// server.js
+const express = require('express');
+const http = require('http');
+const WebSocket = require('ws');
+const crypto = require('crypto');
 
 const app = express();
-
-// Basic HTTP routes for sanity/health
-app.get("/", (_req, res) => res.send("ROS relay OK"));
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get('/', (_req, res) => res.send('ROS relay OK'));
+app.get('/health', (_req, res) => res.json({ ok: true }));
 
 const server = http.createServer(app);
-
-// We upgrade HTTP → WS on /ws (Render supports upgrades on web services)
 const wss = new WebSocket.Server({ noServer: true });
 
-// roomName -> Set<ws>
+// --- Rooms and queue ---
+/** Map<string, Set<WebSocket>> */
 const rooms = new Map();
-function roomSet(name) {
-  let s = rooms.get(name);
-  if (!s) {
-    s = new Set();
-    rooms.set(name, s);
-  }
-  return s;
+/** waiting player for quick-match (null or WebSocket) */
+let waiting = null;
+
+function randId(len = 6) {
+  return crypto.randomBytes(8).toString('base64url').slice(0, len);
 }
-
-function joinRoom(ws, name) {
-  // leave previous room, if any
-  if (ws._room) {
-    const prev = rooms.get(ws._room);
-    if (prev) {
-      prev.delete(ws);
-      if (prev.size === 0) rooms.delete(ws._room);
-    }
-  }
-
-  ws._room = name;
-  roomSet(name).add(ws);
-
-  // tell the client we’re ready (the client code looks for hello_ack)
-  send(ws, { kind: "hello_ack", id: ws._id, room: name });
-  console.log(`[join] ws#${ws._id} → room="${name}"`);
+function roleLabel(ws) {
+  // map A/B to host/guest (what client understands)
+  return ws._role === 'A' ? 'host' : (ws._role === 'B' ? 'guest' : null);
 }
-
+function roomSet(id) {
+  let set = rooms.get(id);
+  if (!set) { set = new Set(); rooms.set(id, set); }
+  return set;
+}
+function leaveCurrentRoom(ws) {
+  if (!ws._room) return;
+  const set = rooms.get(ws._room);
+  if (set) {
+    set.delete(ws);
+    if (set.size === 0) rooms.delete(ws._room);
+  }
+  ws._room = null;
+  ws._role = null;
+}
+function joinRoom(ws, id) {
+  leaveCurrentRoom(ws);
+  ws._room = id;
+  roomSet(id).add(ws);
+  send(ws, { kind: 'hello_ack', id: ws._id, room: id });
+  // let everyone see the fresh room list
+  broadcastLobbyRooms();
+}
+function listRooms() {
+  const out = [];
+  for (const [id, set] of rooms) {
+    if (id === 'lobby') continue;
+    out.push({
+      id,
+      name: id,              // simple label; client will show this
+      players: set.size
+    });
+  }
+  return out;
+}
 function send(ws, obj) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(obj));
   }
 }
-
-function listRooms() {
-  const out = [];
-  for (const [id, set] of rooms) {
-    if (id !== "lobby") out.push({ id, players: set.size, name: id });
+function broadcast(roomId, obj, except) {
+  const set = rooms.get(roomId);
+  if (!set) return;
+  const data = JSON.stringify(obj);
+  for (const peer of set) {
+    if (peer !== except && peer.readyState === WebSocket.OPEN) {
+      peer.send(data);
+    }
   }
-  return out;
+}
+function broadcastLobbyRooms() {
+  const payload = { kind: 'rooms', rooms: listRooms() };
+  // broadcast into lobby (and to anyone else who cares)
+  for (const [, set] of rooms) {
+    for (const ws of set) send(ws, payload);
+  }
 }
 
-// Handle the HTTP → WS upgrade only on /ws
-server.on("upgrade", (req, socket, head) => {
-  try {
-    if (!req.url.startsWith("/ws")) {
-      socket.destroy();
-      return;
-    }
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      wss.emit("connection", ws, req);
-    });
-  } catch {
-    try { socket.destroy(); } catch {}
-  }
+function startMatchInRoom(roomId) {
+  const set = rooms.get(roomId);
+  if (!set || set.size < 2) return;
+  // pick two sockets deterministically
+  const players = Array.from(set).slice(0, 2);
+  const A = players[0], B = players[1];
+  A._role = 'A';
+  B._role = 'B';
+  // Notify each side who they are
+  send(A, { kind: 'match', roomId, you: 'A' });
+  send(B, { kind: 'match', roomId, you: 'B' });
+
+  // let both clients know each other's names (if set already)
+  if (A._name) broadcast(roomId, { kind: 'name', who: roleLabel(A), name: A._name });
+  if (B._name) broadcast(roomId, { kind: 'name', who: roleLabel(B), name: B._name });
+}
+
+// --- HTTP→WS upgrade only at /ws ---
+server.on('upgrade', (req, socket, head) => {
+  if (!req.url.startsWith('/ws')) { socket.destroy(); return; }
+  wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
 });
 
-let nextId = 1;
+// --- Connection handler ---
+wss.on('connection', (ws, req) => {
+  ws._id = Math.floor(Math.random() * 1e9);
+  ws._name = null;
+  ws._room = null;
+  ws._role = null;
+  ws.isAlive = true;
 
-wss.on("connection", (ws, req) => {
-  ws._id = nextId++;
-  ws._name = `Player-${ws._id}`;
-
-  // Parse ?room=… (default to lobby)
-  const params = new URL(req.url, "http://localhost").searchParams;
-  const room = params.get("room") || "lobby";
+  // parse ?room=
+  const params = new URL(req.url, 'http://x').searchParams;
+  const room = params.get('room') || 'lobby';
   joinRoom(ws, room);
 
-  ws.on("message", (data) => {
+  // heartbeat
+  ws.on('pong', () => { ws.isAlive = true; });
+
+  ws.on('message', (data) => {
     let msg;
-    try { msg = JSON.parse(data.toString()); }
-    catch (e) { console.warn(`[bad JSON] ws#${ws._id}:`, e); return; }
+    try { msg = JSON.parse(data); } catch { return; }
 
-    // Minimal lobby/matchmaking API expected by your client
-    switch (msg.kind) {
-      case "set_name": {
-        if (typeof msg.name === "string") ws._name = msg.name.slice(0, 32);
-        break;
+    // --- lobby API the client expects ---
+    if (msg.kind === 'set_name' && typeof msg.name === 'string') {
+      ws._name = String(msg.name).slice(0, 32);
+      // tell peers my name (uses who: host/guest)
+      if (ws._room) {
+        broadcast(ws._room, { kind: 'name', who: roleLabel(ws), name: ws._name });
       }
+      return;
+    }
 
-      case "list_rooms": {
-        // IMPORTANT: client expects "rooms", not "list"
-        const roomsArr = listRooms();
-        send(ws, { kind: "rooms", rooms: roomsArr });
-        // small log so you can see responses happen
-        console.log(`[rooms] → ws#${ws._id} (${roomsArr.length} rooms)`);
-        break;
-      }
+    if (msg.kind === 'list_rooms') {
+      send(ws, { kind: 'rooms', rooms: listRooms() });
+      return;
+    }
 
-      case "create_room": {
-        const id = (msg.id || Math.random().toString(36).slice(2, 8)).toLowerCase();
-        joinRoom(ws, id);
-        send(ws, { kind: "room_created", id });
-        break;
-      }
+    if (msg.kind === 'create_room') {
+      const id = msg.id || randId();
+      joinRoom(ws, id);
+      send(ws, { kind: 'room_created', id });
+      // If someone else joins, we'll start the match then.
+      return;
+    }
 
-      case "join_room": {
-        if (msg.id) {
-          joinRoom(ws, String(msg.id));
-          send(ws, { kind: "room_joined", id: String(msg.id) });
-        }
-        break;
-      }
+    if (msg.kind === 'join_room' && msg.id) {
+      joinRoom(ws, String(msg.id));
+      send(ws, { kind: 'room_joined', id: String(msg.id) });
+      // auto-start when 2 players present
+      const set = rooms.get(ws._room);
+      if (set && set.size === 2) startMatchInRoom(ws._room);
+      return;
+    }
 
-      // Anything else: relay to peers in the same room
-      default: {
-        const peers = rooms.get(ws._room) || new Set();
-        for (const peer of peers) {
-          if (peer !== ws && peer.readyState === WebSocket.OPEN) {
-            peer.send(JSON.stringify(msg));
-          }
-        }
-        break;
+    if (msg.kind === 'queue') {
+      // Quick Match flow
+      send(ws, { kind: 'queued' }); // show "searching" on client
+      if (!waiting || waiting.readyState !== WebSocket.OPEN) {
+        waiting = ws;
+        return;
       }
+      // pair waiting + ws into a fresh room
+      const id = randId();
+      joinRoom(waiting, id);
+      joinRoom(ws, id);
+      startMatchInRoom(id);
+      waiting = null;
+      return;
+    }
+
+    // --- gameplay messages: just relay to peers in the same room ---
+    if (ws._room) {
+      broadcast(ws._room, msg, ws);
     }
   });
 
-  ws.on("close", () => {
-    const set = rooms.get(ws._room);
-    if (set) {
-      set.delete(ws);
-      if (set.size === 0) rooms.delete(ws._room);
+  ws.on('close', () => {
+    if (waiting === ws) waiting = null;
+    const roomId = ws._room;
+    leaveCurrentRoom(ws);
+    if (roomId) {
+      // tell remaining peer (if any)
+      broadcast(roomId, { kind: 'opponent_disconnected' });
+      broadcastLobbyRooms();
     }
-    console.log(`[close] ws#${ws._id}`);
   });
 });
 
-// Keep-alive pings so Render/clients don’t silently drop the socket
-setInterval(() => {
-  for (const client of wss.clients) {
-    if (client.readyState === WebSocket.OPEN) {
-      try { client.ping(); } catch {}
-    }
+// heartbeat (keeps Render from closing idle sockets)
+const interval = setInterval(() => {
+  for (const ws of wss.clients) {
+    if (ws.isAlive === false) { ws.terminate(); continue; }
+    ws.isAlive = false;
+    try { ws.ping(); } catch {}
   }
 }, 25000);
+wss.on('close', () => clearInterval(interval));
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log("relay listening on", PORT));
+server.listen(PORT, () => console.log('relay listening on', PORT));
