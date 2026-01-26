@@ -370,7 +370,7 @@ const CONFIG = {
   CRIT_BASE: 0.10, CRIT_CAP: 0.40, CRIT_QKN_FACTOR: 0.005, CRIT_INT_FACTOR: 0.005,
   DODGE_BASE: 0.025, DODGE_QKN_FACTOR: 0.0025, DODGE_CAP: 0.15,
 
-  ARMOR_K: 0.025, DAMAGE_GLOBAL: 1.15,
+  ARMOR_K: 0.025, DAMAGE_GLOBAL: 1.25,
 
   SHRUG_BASE: 0.025, SHRUG_TGH_FACTOR: 0.0025,
 
@@ -533,7 +533,7 @@ case 'Warrior': return [
    base:{min:35,max:45}, statCoef:0.35, isBasic:true,
    use:function(a,t){ return hit(a,t,{ability:this}); } },
 
-  {label:'Warhorn', desc:'Heal and briefly bolster yourself with strength and quickness.',
+  {label:'Warhorn', desc:'Heal and briefly bolster yourself with strength and ability quickness.',
    speed:'slow', type:'phys', target:'self',
    use:(a)=>{
      // ATK↑ — 1 stack for 3 rounds
@@ -692,7 +692,7 @@ case 'Cleric': return [
     use: (a, arr) => {
       for (const ally of arr){
         if (!ally.alive()) continue;
-        const H = computeAbilityHeal(a, ally, { heal:{ min:10, max:30 }, healCoef:0.40, scalesWith:'SDM', type:'mag' });
+        const H = computeAbilityHeal(a, ally, { heal:{ min:15, max:45 }, healCoef:0.40, scalesWith:'SDM', type:'mag' });
         const before = ally.hp;
         ally.hp = clamp(ally.hp + H, 0, ally.maxHP);
         removeStatusKey(ally, 'poison');
@@ -800,7 +800,7 @@ case 'Cleric': return [
        use:(a,t)=>{
   const dur = buffDurBySDM(a);
   pushStatus(t,{key:'atk_up', dur});
-  const H = computeAbilityHeal(a,t,{ heal:{min:8,max:13}, healCoef:0.25, scalesWith:'ATK', type:'mag' });
+  const H = computeAbilityHeal(a,t,{ heal:{min:20,max:30}, healCoef:0.25, scalesWith:'ATK', type:'mag' });
   const before = t.hp;
   t.hp = clamp(t.hp + H, 0, t.maxHP);
   const healed = t.hp - before;
@@ -829,7 +829,7 @@ case 'Cleric': return [
 
     /* ===== Monk ===== */
     case 'Monk': return [
-      {label:'Flurry', desc:'Three rapid strikes.', speed:'fast', type:'phys', target:'enemy',
+      {label:'Flurry', desc:'Three rapid strikes.', speed:'normal', type:'phys', target:'enemy',
        base:{min:25,max:30}, statCoef:0.25,
        use:function(a,t){ for(let i=1;i<=3;i++){ if(!t.alive()) break;
          a._usingAbilityLabel = `Flurry (${i}/3)`; hit(a,t,{ability:this}); a._usingAbilityLabel = undefined; } } },
@@ -883,7 +883,7 @@ case 'Cleric': return [
        }},
 
       {label:'Plague', desc:'Afflict all foes with massive poison.', speed:'slow', type:'mag', target:'all-enemies',
-       base:{min:10,max:40}, statCoef:0.30,
+       base:{min:10,max:60}, statCoef:0.30,
        use:function(a,arr){
          for (const t of arr){
            if (!t.alive()) continue;
@@ -989,6 +989,14 @@ function cleanseCCAndDebuffs(u){
   if (!u || !u.status) return false; const before=u.status.length;
   u.status=u.status.filter(s=>!toStrip.has(s.key)); if (u._refresh) u._refresh();
   return u.status.length!==before;
+}
+
+function everyoneInNetOrder(){
+  // IMPORTANT: these must always refer to the SAME TEAMS, not "my team"
+  // You need references to hostTeamUnits and guestTeamUnits in your battle scene.
+  const all = [...hostTeamUnits, ...guestTeamUnits].filter(u => u && u.alive());
+  all.sort((a,b) => String(a.netId).localeCompare(String(b.netId)));
+  return all;
 }
 
 /* ---------- Poison engine ---------- */
@@ -1506,16 +1514,30 @@ async function resolveSimultaneous(){
     const { actor } = step;
     if (!actor.alive()){ await sleep(SLEEP_TINY_MS); continue; }
 
-    // berserk at resolve
-    if (hasStatus(actor,'berserk')){
-      const pool=[...player.filter(u=>u.alive()), ...enemy.filter(u=>u.alive())].filter(x=>x!==actor);
-      const tgt=pool.length?pool[(rand()*pool.length)|0]:null;
-      if (tgt){ const basic=abilitiesFor(actor).find(a=>a.isBasic||(a.label&&a.label.toLowerCase()==='attack'));
-        if (basic&&typeof basic.use==='function'){ actor._usingAbilityLabel=basic.label; basic.use.call(basic,actor,tgt); actor._usingAbilityLabel=undefined; }
-        else { hit(actor,tgt,{type:(actor.kind==='mag'?'mag':'phys'), scale:1.0 }, 'attacks'); }
-      } else { appendLog(`${actor.name} rages in place with no target!`); }
-      await sleep(ACTION_DELAY_MS); continue;
+   // berserk at resolve
+if (hasStatus(actor,'berserk')){
+  const pool = [...player, ...enemy]
+    .filter(u => u.alive() && u !== actor)
+    .sort((a,b) => String(a.netId || a.name).localeCompare(String(b.netId || b.name)));
+
+  const tgt = pool.length ? pool[(rand() * pool.length) | 0] : null;
+
+  if (tgt){
+    const basic = abilitiesFor(actor).find(a => a.isBasic || (a.label && a.label.toLowerCase() === 'attack'));
+    if (basic && typeof basic.use === 'function'){
+      actor._usingAbilityLabel = basic.label;
+      basic.use.call(basic, actor, tgt);
+      actor._usingAbilityLabel = undefined;
+    } else {
+      hit(actor, tgt, {type:(actor.kind==='mag'?'mag':'phys'), scale:1.0 }, 'attacks');
     }
+  } else {
+    appendLog(`${actor.name} rages in place with no target!`);
+  }
+
+  await sleep(ACTION_DELAY_MS);
+  continue;
+}
 
     // stun
     if (hasStatus(actor,'stun')){
@@ -2271,10 +2293,17 @@ function startBattleFromDraft(){
   if (ov) ov.remove();
   if (typeof unmountLobbyInField === 'function') unmountLobbyInField();
 
+
   // build units from picks (before restart)
   player = (Array.isArray(PVP.picksMe) ? PVP.picksMe : []).map(job => makeUnit(job, 'player'));
   enemy  = (Array.isArray(PVP.picksOpp) ? PVP.picksOpp : []).map(job => makeUnit(job, 'enemy'));
   ensureUnitSides();  // label units as host/guest before scene restart
+
+// After you create your 3v3 units:
+function assignNetIds(hostUnits, guestUnits){
+  hostUnits.forEach((u,i)=> u.netId = `H${i}`);
+  guestUnits.forEach((u,i)=> u.netId = `G${i}`);
+}
 
   PVP.phase = 'battle';
   PVP._readyForBattle = true; // flag for Scene.create to know we're in battle state
