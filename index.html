@@ -2652,16 +2652,18 @@ case 'round_choices': {
       }
       PVP.pickCount++;
 
-      // Alternate turns (A,B,A,B,A,B) with starter host
-      const starter = 'host';
-      const sideTurn = (PVP.pickCount % 2 === 0) ? starter : (starter === 'host' ? 'guest' : 'host');
-      PVP.pickTurn = (sideTurn === PVP.role) ? 'me' : 'opp';
+     // Alternate turns based on who just picked (more reliable than pickCount)
+const justPicked = msg.by; // 'host' or 'guest'
+const nextSide = (justPicked === 'host') ? 'guest' : 'host';
+PVP.pickTurn = (nextSide === PVP.role) ? 'me' : 'opp';
 
       updateDraftUI();
-      if (PVP.picksMe.length === 3 && PVP.picksOpp.length === 3){
-        startBattleFromDraft();
-      }
-      break;
+
+const totalPicks = PVP.picksMe.length + PVP.picksOpp.length;
+if (totalPicks >= 6) {
+  startBattleFromDraft();
+}
+break;
     }
 
     // Round wires
@@ -2791,11 +2793,13 @@ function updateDraftUI(){
     const desc=document.createElement('div'); desc.className='desc'; desc.textContent=JOBS[job]?`STR ${JOBS[job].STR} • INT ${JOBS[job].INT} • QKN ${JOBS[job].QKN} • TGH ${JOBS[job].TGH}`:'';
     b.appendChild(title); b.appendChild(desc);
     b.disabled=(PVP.pickTurn!=='me');
-    b.onclick = () => {
-      if (PVP.pickTurn !== 'me') return;
-      b.disabled = true;
-      send({ kind:'draft_pick', job, by:PVP.role });
-    };
+b.onclick = () => {
+  if (PVP.pickTurn !== 'me') return;
+  if (PVP.picksMe.length >= 3) return; // already have 3 picks
+  b.disabled = true;
+  send({ kind:'draft_pick', job, by:PVP.role });
+};
+
     pool.appendChild(b);
   }
   if (!pool.children.length){
