@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Server config: change to wss/ngrok later -->
-  <script>window.PVP_WS_URL = "wss://https://ros-relay.onrender.com/ws";</script>
+  <script>window.PVP_WS_URL = "wss://ros-relay.onrender.com/ws";</script>
 
   <style>
     :root{
@@ -2207,7 +2207,7 @@ function connectWS(){
   }
   _wsOpenPromise = new Promise((resolve)=>{
     const roomId = PVP.roomId || 'lobby'; // your code already sets this on create/join
-    const RELAY_ORIGIN = 'wss//ros-relay.onrender.com/ws';
+    const RELAY_ORIGIN = 'wss://ros-relay.onrender.com/ws';
     const RELAY_URL = RELAY_ORIGIN + '?room=' + encodeURIComponent(roomId);
 
     const ws = new WebSocket(RELAY_URL);   // <— changed line
@@ -2248,11 +2248,15 @@ function connectWS(){
       console.error(e);
     });
 
-    ws.addEventListener('message', (ev)=>{
-      let msg; try { msg = JSON.parse(ev.data); } catch { return; }
-      if (msg && msg.type && !msg.kind) msg.kind = msg.type; // tolerate {type}
-      handleNet(msg);
-    });
+    ws.addEventListener('message', (ev) => {
+  try {
+    const msg = JSON.parse(ev.data);  // turn the text into an object
+    handleNet(msg);                   // send it to your handler
+  } catch (err) {
+    console.warn('Bad WS message:', ev.data, err);
+  }
+});
+
   });
   return _wsOpenPromise;
 }
