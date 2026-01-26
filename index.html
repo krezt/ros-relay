@@ -362,13 +362,13 @@ const choice=(arr)=> arr[(rand()*arr.length)|0];
 
 /* ---------- config ---------- */
 const CONFIG = {
-  BASE_HP: 50, HP_PER_TGH: 25,
+  BASE_HP: 50, HP_PER_TGH: 20,
   ATK_PER_STR: 1.5, SDM_PER_INT: 1.5,
   DEF_FROM_TGH: 0.75, DEF_FROM_QKN: 0.75,
 
   CC_BASE_MIN: 2, CC_BASE_MAX: 5, CC_SDM_PER_BONUS: 15, CC_MAX_CAP: 8,
   CRIT_BASE: 0.10, CRIT_CAP: 0.40, CRIT_QKN_FACTOR: 0.005, CRIT_INT_FACTOR: 0.005,
-  DODGE_BASE: 0.025, DODGE_QKN_FACTOR: 0.0025, DODGE_CAP: 0.20,
+  DODGE_BASE: 0.025, DODGE_QKN_FACTOR: 0.0025, DODGE_CAP: 0.15,
 
   ARMOR_K: 0.025, DAMAGE_GLOBAL: 1.15,
 
@@ -2776,6 +2776,20 @@ function mountDraftUI(){
   updateDraftUI();
 }
 
+// One-liners shown during draft (fallbacks handled below)
+const JOB_TAGLINES = {
+  Warrior: "A frontline bruiser with hard hits, taunts, and tough skin.",
+  Rogue: "Speed manipulation and poison attacks to pick opponents apart.",
+  Monk: "Melee combos and cleansing abilities.",
+  Cleric: "The ultimate healer to keep allies standing under fire.",
+  Paladin: "Versatile fighter with Holy magic.",
+  Archer: "Expose vulnerabilities and rain arrows on your enemies.",
+  Mage: "A powerful magician who has mastered the elements.",
+  Mystic: "Play mind games and control your opponents.",
+  Necromancer: "Master of the Dark arts.",
+  Barbarian: "Unparalleled raw damage and snowball ability.",
+};
+
 function updateDraftUI(){
   const turnChip=document.getElementById('turnChip');
   if (turnChip){ const mine=(PVP.pickTurn==='me'); turnChip.textContent=mine?'Your pick':'Opponent'; turnChip.style.color=mine?'#a7ffb5':'#ffd37a'; }
@@ -2790,7 +2804,19 @@ function updateDraftUI(){
     const b=document.createElement('button'); b.className='action-btn';
     Object.assign(b.style,{padding:'8px',textAlign:'left',whiteSpace:'normal',lineHeight:'1.2',display:'flex',flexDirection:'column',gap:'4px'});
     const title=document.createElement('div'); title.className='label'; title.textContent=job;
-    const desc=document.createElement('div'); desc.className='desc'; desc.textContent=JOBS[job]?`STR ${JOBS[job].STR} • INT ${JOBS[job].INT} • QKN ${JOBS[job].QKN} • TGH ${JOBS[job].TGH}`:'';
+    const desc=document.createElement('div');
+desc.className='desc';
+
+// 1) Use your custom one-liner if it exists
+// 2) Else fall back to JOBS[job].desc or JOBS[job].blurb if you have one
+// 3) Else show a generic placeholder so it never looks broken
+const oneLiner =
+  (JOB_TAGLINES && JOB_TAGLINES[job]) ||
+  (JOBS && JOBS[job] && (JOBS[job].desc || JOBS[job].blurb)) ||
+  "No description yet.";
+
+desc.textContent = oneLiner;
+
     b.appendChild(title); b.appendChild(desc);
     b.disabled=(PVP.pickTurn!=='me');
 b.onclick = () => {
