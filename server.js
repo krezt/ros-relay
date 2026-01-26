@@ -173,10 +173,18 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
-    // --- gameplay messages: just relay to peers in the same room ---
-    if (ws._room) {
-      broadcast(ws._room, msg, ws);
-    }
+  // --- gameplay messages: relay to everyone in the room (including sender) ---
+if (ws._room) {
+
+  // If it's a draft pick, force "by" from the socket's role
+  if (msg.kind === 'draft_pick') {
+    msg.by = roleLabel(ws); // 'host' or 'guest'
+  }
+
+  broadcast(ws._room, msg); // send to ALL (including sender)
+}
+
+
   });
 
   ws.on('close', () => {
