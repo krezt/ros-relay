@@ -523,6 +523,20 @@ class Unit{
   alive(){ return this.hp>0; }
 }
 
+// One-line blurbs for draft UI
+window.CLASS_BLURBS = {
+  Warrior: "Frontline protector with taunt and team shielding.",
+  Barbarian: "High damage bruiser who breaks defenses and snowballs on kills.",
+  Rogue: "Fast skirmisher with poison, blinds, and burst crits.",
+  Cleric: "Team healer with buffs and a single resurrection.",
+  Mage: "Explosive caster with stuns and heavy AoE.",
+  Paladin: "Sturdy support with stuns, cleanse, and a clutch shield.",
+  Archer: "Ranged pressure with marks, volleys, and big snipes.",
+  Monk: "Combo striker with multi-hits, counters, and utility cleanses.",
+  Necromancer: "Poison engine with drains and plague detonations.",
+  Mystic: "Control mage with stuns, berserk, and speed manipulation."
+};
+
 /* ---------- abilities (now with min/max healing where relevant) ---------- */
 function abilitiesFor(u){
   switch(u.job){
@@ -2817,7 +2831,7 @@ function getOrCreateDraftOverlay(){
       <input id="draft-filter" placeholder="Filter classes…" style="background:#22314b;color:#fff;border:1px solid #4a5a7a;border-radius:4px;padding:6px 8px;min-width:180px;">
     </div>`;
   const pool=document.createElement('div'); pool.id='pool';
-  Object.assign(pool.style,{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(160px, 1fr))',gap:'8px',overflow:'auto',minHeight:0,flex:'1 1 auto',paddingBottom:'4px'});
+  Object.assign(pool.style,{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))',gap:'8px',overflow:'auto',minHeight:0,flex:'1 1 auto',paddingBottom:'4px'});
   poolWrap.appendChild(poolHeader); poolWrap.appendChild(pool);
 
   const footer=document.createElement('div');
@@ -2869,75 +2883,68 @@ function updateDraftUI(){
   const filter=document.getElementById('draft-filter'); const q=(filter?.value||'').trim().toLowerCase();
   pool.textContent=''; const remaining=PVP.pool.filter(j=>!q||j.toLowerCase().includes(q));
   for (const job of remaining){
-    const b = document.createElement('button');
-b.className = 'action-btn';
-Object.assign(b.style, {
-  padding:'8px',
-  textAlign:'left',
-  whiteSpace:'normal',
-  lineHeight:'1.2',
-  display:'flex',
-  flexDirection:'column',
-  gap:'4px'
-});
+  const b = document.createElement('button');
+  b.className = 'action-btn';
 
-// Row: portrait + text
-const row = document.createElement('div');
-Object.assign(row.style, { display:'flex', gap:'10px', alignItems:'center' });
+  // Make each button a vertical card
+  Object.assign(b.style, {
+    padding:'10px',
+    textAlign:'left',
+    whiteSpace:'normal',
+    lineHeight:'1.2',
+    display:'flex',
+    flexDirection:'column',
+    gap:'6px',
+    alignItems:'stretch'
+  });
 
-// Portrait
-const img = document.createElement('img');
-img.src = portraitURL(job);
-img.alt = job;
-Object.assign(img.style, {
-  width:'44px', height:'44px',
-  borderRadius:'6px',
-  objectFit:'cover',
-  border:'1px solid rgba(255,255,255,0.15)',
-  background:'rgba(0,0,0,0.2)',
-  flex:'0 0 auto'
-});
-img.onerror = () => { img.style.display = 'none'; };
+  // Title
+  const title = document.createElement('div');
+  title.className = 'label';
+  title.textContent = job;
+  Object.assign(title.style, { fontWeight:'800' });
 
-// Text column
-const col = document.createElement('div');
-Object.assign(col.style, { display:'flex', flexDirection:'column', gap:'4px', minWidth:0 });
+  // One-liner
+  const desc = document.createElement('div');
+  desc.className = 'desc';
+  desc.textContent =
+    (window.CLASS_BLURBS && window.CLASS_BLURBS[job]) ||
+    '—';
+  Object.assign(desc.style, { opacity:'0.9' });
 
-// Title + one-liner
-const title = document.createElement('div');
-title.className = 'label';
-title.textContent = job;
+  // Portrait BELOW the text (centered)
+  const img = document.createElement('img');
+  img.src = portraitURL(job);
+  img.alt = job;
+  Object.assign(img.style, {
+    width:'100%',
+    maxWidth:'140px',
+    height:'auto',
+    marginTop:'6px',
+    borderRadius:'8px',
+    objectFit:'cover',
+    border:'1px solid rgba(255,255,255,0.15)',
+    background:'rgba(0,0,0,0.2)',
+    alignSelf:'center'
+  });
+  img.onerror = () => { img.style.display = 'none'; };
 
-const desc = document.createElement('div');
-desc.className = 'desc';
+  b.appendChild(title);
+  b.appendChild(desc);
+  b.appendChild(img);
 
-// Pick ONE description source (don’t overwrite it twice)
-const oneLiner =
-  (window.JOB_TAGLINES && window.JOB_TAGLINES[job]) ||
-  (window.CLASS_BLURBS && window.CLASS_BLURBS[job]) ||
-  (JOBS && JOBS[job] && (JOBS[job].desc || JOBS[job].blurb)) ||
-  'No description yet.';
-desc.textContent = oneLiner;
+  // Enable/disable pick
+  b.disabled = (PVP.pickTurn !== 'me');
+  b.onclick = () => {
+    if (PVP.pickTurn !== 'me') return;
+    if (PVP.picksMe.length >= 3) return;
+    b.disabled = true;
+    send({ kind:'draft_pick', job, by:PVP.role });
+  };
 
-col.appendChild(title);
-col.appendChild(desc);
+  pool.appendChild(b);
+}
 
-row.appendChild(img);
-row.appendChild(col);
-b.appendChild(row);
-
-// Enable/disable pick
-b.disabled = (PVP.pickTurn !== 'me');
-b.onclick = () => {
-  if (PVP.pickTurn !== 'me') return;
-  if (PVP.picksMe.length >= 3) return;
-  b.disabled = true;
-  send({ kind:'draft_pick', job, by:PVP.role });
-};
-
-pool.appendChild(b);
-
-  }
   if (!pool.children.length){
     const empty=document.createElement('div'); empty.style.cssText='opacity:.8;font-size:13px;padding:12px;'; empty.textContent=q?'No classes match your filter.':'No classes remaining.'; pool.appendChild(empty);
   }
