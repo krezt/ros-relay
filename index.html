@@ -2600,6 +2600,12 @@ enterLobbyUI();
   document.body.appendChild(ov);
 };
 
+function portraitURL(job){
+  const base = (window.SPRITE_BASE_URL || 'https://raw.githubusercontent.com/krezt/tol-assets/main')
+    .replace(/\/+$/,'');
+  return `${base}/portraits/${encodeURIComponent(job)}.png`;
+}
+
 /* ---------- Net handler ---------- */
 function handleNet(msg){
   switch(msg.kind){
@@ -2670,11 +2676,6 @@ case 'round_choices': {
   break;
 }
 
-function portraitURL(job){
-  const base = (window.SPRITE_BASE_URL || 'https://raw.githubusercontent.com/krezt/tol-assets/main')
-    .replace(/\/+$/,'');
-  return `${base}/portraits/${encodeURIComponent(job)}.png`;
-}
 
     // Names (various shapes)
     case 'opponent_name':
