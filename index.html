@@ -2851,6 +2851,13 @@ const JOB_TAGLINES = {
   Barbarian: "Unparalleled raw damage and snowball ability.",
 };
 
+// --- Draft portrait helper (must be global) ---
+function portraitURL(job){
+  const base = (window.SPRITE_BASE_URL || 'https://raw.githubusercontent.com/krezt/tol-assets/main')
+    .replace(/\/+$/,'');
+  return `${base}/portraits/${encodeURIComponent(job)}.png`;
+}
+
 function updateDraftUI(){
   const turnChip=document.getElementById('turnChip');
   if (turnChip){ const mine=(PVP.pickTurn==='me'); turnChip.textContent=mine?'Your pick':'Opponent'; turnChip.style.color=mine?'#a7ffb5':'#ffd37a'; }
