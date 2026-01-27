@@ -2656,6 +2656,12 @@ case 'round_choices': {
   break;
 }
 
+function portraitURL(job){
+  const base = (window.SPRITE_BASE_URL || 'https://raw.githubusercontent.com/krezt/tol-assets/main')
+    .replace(/\/+$/,'');
+  return `${base}/portraits/${encodeURIComponent(job)}.png`;
+}
+
     // Names (various shapes)
     case 'opponent_name':
     case 'peer_name':
@@ -2675,38 +2681,26 @@ case 'round_choices': {
 
     // Match start (rooms flow)
     case 'match': {
-  // Lobby server variant
-  PVP.roomId = msg.roomId || PVP.roomId;
-  // map A/B to host/guest for your existing code paths
-  PVP.role   = (msg.you === 'A') ? 'host' : 'guest';
-  PVP.matchId = PVP.roomId; // keep both populated for compatibility
+  PVP.roomId  = msg.roomId || PVP.roomId;
+  PVP.role    = (msg.you === 'A') ? 'host' : 'guest';
+  PVP.matchId = PVP.roomId;
 
-function portraitURL(job){
-  const base = (window.SPRITE_BASE_URL || 'https://raw.githubusercontent.com/krezt/tol-assets/main')
-    .replace(/\/+$/,'');
-  return `${base}/portraits/${encodeURIComponent(job)}.png`;
-}
-
-  // --- draft init ---
   PVP.phase = 'draft';
   PVP.pool = [...ALL_CLASSES];
   PVP.picksMe = [];
   PVP.picksOpp = [];
   PVP.pickCount = 0;
 
-  // --- IMPORTANT: who picks first ---
-  PVP.starter = 'host';                // A starts (matches server draftSeq)
+  PVP.starter = 'host';
   const sideTurn = PVP.starter;
   PVP.pickTurn = (sideTurn === PVP.role) ? 'me' : 'opp';
 
-  // UI
   unmountLobbyInField && unmountLobbyInField();
   mountDraftUI();
   updateDraftUI();
   appendLog('[PvP] Match ready. Draft begins.');
   break;
 }
-
 
     // Draft pick
     case 'draft_pick': {
@@ -2868,11 +2862,23 @@ function updateDraftUI(){
   const filter=document.getElementById('draft-filter'); const q=(filter?.value||'').trim().toLowerCase();
   pool.textContent=''; const remaining=PVP.pool.filter(j=>!q||j.toLowerCase().includes(q));
   for (const job of remaining){
-    const b=document.createElement('button'); b.className='action-btn';
-    Object.assign(b.style,{padding:'8px',textAlign:'left',whiteSpace:'normal',lineHeight:'1.2',display:'flex',flexDirection:'column',gap:'4px'});
-    const row = document.createElement('div');
+    const b = document.createElement('button');
+b.className = 'action-btn';
+Object.assign(b.style, {
+  padding:'8px',
+  textAlign:'left',
+  whiteSpace:'normal',
+  lineHeight:'1.2',
+  display:'flex',
+  flexDirection:'column',
+  gap:'4px'
+});
+
+// Row: portrait + text
+const row = document.createElement('div');
 Object.assign(row.style, { display:'flex', gap:'10px', alignItems:'center' });
 
+// Portrait
 const img = document.createElement('img');
 img.src = portraitURL(job);
 img.alt = job;
@@ -2881,15 +2887,30 @@ Object.assign(img.style, {
   borderRadius:'6px',
   objectFit:'cover',
   border:'1px solid rgba(255,255,255,0.15)',
-  background:'rgba(0,0,0,0.2)'
+  background:'rgba(0,0,0,0.2)',
+  flex:'0 0 auto'
 });
 img.onerror = () => { img.style.display = 'none'; };
 
+// Text column
 const col = document.createElement('div');
 Object.assign(col.style, { display:'flex', flexDirection:'column', gap:'4px', minWidth:0 });
 
-const title = document.createElement('div'); title.className='label'; title.textContent = job;
-const desc  = document.createElement('div'); desc.className='desc'; desc.textContent = CLASS_BLURBS?.[job] || '';
+// Title + one-liner
+const title = document.createElement('div');
+title.className = 'label';
+title.textContent = job;
+
+const desc = document.createElement('div');
+desc.className = 'desc';
+
+// Pick ONE description source (don’t overwrite it twice)
+const oneLiner =
+  (window.JOB_TAGLINES && window.JOB_TAGLINES[job]) ||
+  (window.CLASS_BLURBS && window.CLASS_BLURBS[job]) ||
+  (JOBS && JOBS[job] && (JOBS[job].desc || JOBS[job].blurb)) ||
+  'No description yet.';
+desc.textContent = oneLiner;
 
 col.appendChild(title);
 col.appendChild(desc);
@@ -2898,27 +2919,17 @@ row.appendChild(img);
 row.appendChild(col);
 b.appendChild(row);
 
-
-// 1) Use your custom one-liner if it exists
-// 2) Else fall back to JOBS[job].desc or JOBS[job].blurb if you have one
-// 3) Else show a generic placeholder so it never looks broken
-const oneLiner =
-  (JOB_TAGLINES && JOB_TAGLINES[job]) ||
-  (JOBS && JOBS[job] && (JOBS[job].desc || JOBS[job].blurb)) ||
-  "No description yet.";
-
-desc.textContent = oneLiner;
-
-    b.appendChild(title); b.appendChild(desc);
-    b.disabled=(PVP.pickTurn!=='me');
+// Enable/disable pick
+b.disabled = (PVP.pickTurn !== 'me');
 b.onclick = () => {
   if (PVP.pickTurn !== 'me') return;
-  if (PVP.picksMe.length >= 3) return; // already have 3 picks
+  if (PVP.picksMe.length >= 3) return;
   b.disabled = true;
   send({ kind:'draft_pick', job, by:PVP.role });
 };
 
-    pool.appendChild(b);
+pool.appendChild(b);
+
   }
   if (!pool.children.length){
     const empty=document.createElement('div'); empty.style.cssText='opacity:.8;font-size:13px;padding:12px;'; empty.textContent=q?'No classes match your filter.':'No classes remaining.'; pool.appendChild(empty);
