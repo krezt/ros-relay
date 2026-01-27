@@ -906,23 +906,42 @@ case 'Cleric': return [
          appendLogHTML(`<span style="color:#ff6b6b">${a.name} invokes Death Touch! ${t.name} loses ${half} HP.</span>`);
        }},
 
-      {label:'Plague Detonation', desc:'Consume all poison for an instant burst.', speed:'normal', type:'mag', target:'all-enemies',
-       use:(a,arr)=>{
-         let hits = 0;
-         for (const t of arr){
-           if (!t.alive()) continue;
-           const total = poisonTotal(t);
-           if (total <= 0){ appendLog(`${t.name} has no poison to detonate.`); continue; }
-           removeStatusKey(t,'poison');
-           let dmg = Math.floor(total * (CONFIG.DAMAGE_GLOBAL||1));
-           if (hasStatus(t,'marked')) dmg = Math.floor(dmg * (CONFIG.MARKED_MULT||1.25));
-           t.hp = clamp(t.hp - dmg, 0, t.maxHP);
-           t._refresh && t._refresh(); checkHPWarnings(t);
-           appendLogHTML(`<span style="color:#9be29b">${t.name} suffers ${dmg} from exploding plague.</span>`);
-           hits++;
-         }
-         if (!hits) appendLog(`No poisons to detonate.`);
-       }}
+{label:'Plague Detonation', desc:'Consume all poison for an instant burst.', speed:'normal', type:'mag', target:'all-enemies',
+  use:(a,arr)=>{
+    let hits = 0;
+
+    for (const t of arr){
+      if (!t.alive()) continue;
+
+      const total = poisonTotal(t);
+      if (total <= 0) continue; // (optional) don't spam "no poison" lines
+
+      // consume poison first
+      removeStatusKey(t,'poison');
+
+      let dmg = Math.floor(total * (CONFIG.DAMAGE_GLOBAL||1));
+      if (hasStatus(t,'marked')) dmg = Math.floor(dmg * (CONFIG.MARKED_MULT||1.25));
+
+      const beforeHP = t.hp;
+      t.hp = clamp(t.hp - dmg, 0, t.maxHP);
+
+      t._refresh && t._refresh();
+      if (typeof checkHPWarnings === 'function') checkHPWarnings(t);
+
+      appendLogHTML(`<span style="color:#9be29b">${t.name} suffers ${dmg} from exploding plague.</span>`);
+
+      // ✅ announce death if this hit killed them
+      if (beforeHP > 0 && t.hp <= 0){
+        appendLog(`☠ ${t.name} is down!`);
+      }
+
+      hits++;
+    }
+
+    if (!hits) appendLog(`No poisons to detonate.`);
+  }
+}
+
     ];
 
     /* ===== Mystic ===== */
@@ -1262,19 +1281,31 @@ function endRoundTick(){
     const p = u.status.find(s => s.key === 'poison');
     if (p && Array.isArray(p.data?.contributions) && p.data.contributions.length){
       const current = p.data.contributions.reduce((s,c)=>s+(c.amt||0),0);
-      if (current>0){
+      if (current > 0){
         const dealt = Math.floor(current * (CONFIG.DAMAGE_GLOBAL||1));
+
+        const beforeHP = u.hp;                 // <-- NEW
         u.hp = clamp(u.hp - dealt, 0, u.maxHP);
 
         p.data.contributions = p.data.contributions
-          .map(c=>({ amt: Math.floor(c.amt * 0.85) }))
-          .filter(c=>c.amt >= 1);
+          .map(c => ({ amt: Math.floor(c.amt * 0.85) }))
+          .filter(c => c.amt >= 1);
 
-        const totalLeft = p.data.contributions.reduce((s,c)=>s+c.amt,0);
+        const totalLeft = p.data.contributions.reduce((s,c)=>s + c.amt, 0);
         logGreen(`${u.name} takes ${dealt} poison damage (${totalLeft} total).`);
         u._refresh && u._refresh(); checkHPWarnings(u);
 
-        if (p.data.contributions.length===0) removeStatusKey(u,'poison');
+        // --- NEW: death announce if poison killed them ---
+        if (beforeHP > 0 && u.hp <= 0 && !u._deadLogged){
+          u._deadLogged = true;
+          appendLogHTML(`☠ ${u.name} is down!`);
+          // Optional: clear poison immediately so it doesn't try to tick again
+          removeStatusKey(u,'poison');
+          updateStatusView(u);
+          continue; // stop processing durations/shrugs for a dead unit
+        }
+
+        if (p.data.contributions.length === 0) removeStatusKey(u,'poison');
       }
     }
 
@@ -1292,6 +1323,7 @@ function endRoundTick(){
     updateStatusView(u);
   }
 }
+
 
 
 /* ---------- team accessor ---------- */
