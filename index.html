@@ -2681,6 +2681,12 @@ case 'round_choices': {
   PVP.role   = (msg.you === 'A') ? 'host' : 'guest';
   PVP.matchId = PVP.roomId; // keep both populated for compatibility
 
+function portraitURL(job){
+  const base = (window.SPRITE_BASE_URL || 'https://raw.githubusercontent.com/krezt/tol-assets/main')
+    .replace(/\/+$/,'');
+  return `${base}/portraits/${encodeURIComponent(job)}.png`;
+}
+
   // --- draft init ---
   PVP.phase = 'draft';
   PVP.pool = [...ALL_CLASSES];
@@ -2864,9 +2870,34 @@ function updateDraftUI(){
   for (const job of remaining){
     const b=document.createElement('button'); b.className='action-btn';
     Object.assign(b.style,{padding:'8px',textAlign:'left',whiteSpace:'normal',lineHeight:'1.2',display:'flex',flexDirection:'column',gap:'4px'});
-    const title=document.createElement('div'); title.className='label'; title.textContent=job;
-    const desc=document.createElement('div');
-desc.className='desc';
+    const row = document.createElement('div');
+Object.assign(row.style, { display:'flex', gap:'10px', alignItems:'center' });
+
+const img = document.createElement('img');
+img.src = portraitURL(job);
+img.alt = job;
+Object.assign(img.style, {
+  width:'44px', height:'44px',
+  borderRadius:'6px',
+  objectFit:'cover',
+  border:'1px solid rgba(255,255,255,0.15)',
+  background:'rgba(0,0,0,0.2)'
+});
+img.onerror = () => { img.style.display = 'none'; };
+
+const col = document.createElement('div');
+Object.assign(col.style, { display:'flex', flexDirection:'column', gap:'4px', minWidth:0 });
+
+const title = document.createElement('div'); title.className='label'; title.textContent = job;
+const desc  = document.createElement('div'); desc.className='desc'; desc.textContent = CLASS_BLURBS?.[job] || '';
+
+col.appendChild(title);
+col.appendChild(desc);
+
+row.appendChild(img);
+row.appendChild(col);
+b.appendChild(row);
+
 
 // 1) Use your custom one-liner if it exists
 // 2) Else fall back to JOBS[job].desc or JOBS[job].blurb if you have one
