@@ -2061,6 +2061,7 @@ function unmountLobbyInField(){
 function mountLobbyInField(){
   unmountLobbyInField();
   const root = document.getElementById('battlefield');
+if (!root) { console.error('[Lobby] #battlefield not found — cannot mount lobby'); return; }
   if (!root) return;
   root.style.position = 'relative';
 
@@ -2202,15 +2203,26 @@ function resizePhaserToBattlefield(){ if(!game||!game.scale) return; const s=siz
 window.addEventListener('load', ()=>{
   window.SPRITE_BASE_URL=window.SPRITE_BASE_URL||'https://raw.githubusercontent.com/krezt/tol-assets/main';
   window.ARENA_BG_URL   =window.ARENA_BG_URL   ||'https://raw.githubusercontent.com/krezt/tol-assets/refs/heads/main/bg/arena_bg3.png';
-  initActionBarShell(); bootPhaser(); setTimeout(resizePhaserToBattlefield,0);
-  if ('ResizeObserver' in window){ const ro=new ResizeObserver(()=>{ resizePhaserToBattlefield(); if(sceneRef&&sceneRef.updateBackgroundLayout) sceneRef.updateBackgroundLayout(); }); ro.observe(bfEl); }
-});
-window.addEventListener('load', () => {
-  if (PVP.phase === 'idle') {
-    mountLobbyInField();
-setTopBarLobby();
+
+  initActionBarShell();
+  bootPhaser();
+  setTimeout(resizePhaserToBattlefield, 0);
+
+  // ✅ ensure PVP exists and lobby mounts after boot
+  if (window.PVP && (PVP.phase === 'idle' || !PVP.phase)) {
+    PVP.phase = 'idle';
+    setTimeout(showLobby, 0);
+  }
+
+  if ('ResizeObserver' in window){
+    const ro=new ResizeObserver(()=>{
+      resizePhaserToBattlefield();
+      if(sceneRef&&sceneRef.updateBackgroundLayout) sceneRef.updateBackgroundLayout();
+    });
+    ro.observe(bfEl);
   }
 });
+
 
 window.addEventListener('resize', resizePhaserToBattlefield);
 
@@ -2949,6 +2961,12 @@ function updateDraftUI(){
   if (!pool.children.length){
     const empty=document.createElement('div'); empty.style.cssText='opacity:.8;font-size:13px;padding:12px;'; empty.textContent=q?'No classes match your filter.':'No classes remaining.'; pool.appendChild(empty);
   }
+}
+
+function showLobby(){
+  try { if (typeof enterLobbyUI === 'function') enterLobbyUI(); } catch(e){ console.error('enterLobbyUI failed', e); }
+  try { if (typeof mountLobbyInField === 'function') mountLobbyInField(); } catch(e){ console.error('mountLobbyInField failed', e); }
+  try { if (typeof setTopBarLobby === 'function') setTopBarLobby(); } catch(e){ console.error('setTopBarLobby failed', e); }
 }
 
 function clearCombatUI(){
