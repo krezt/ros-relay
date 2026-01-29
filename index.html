@@ -470,7 +470,7 @@ __setWithVariants('phys', 'Snipe');
 __setWithVariants('mag',  'Piercing Light');       // (already set above, but safe)
 __setWithVariants('mag',  'Sanctify');             // (already set above, but safe)
 __setWithVariants('phys', 'Poison Dagger');        // base hit is phys; its poison DoT is mag (set separately above)
-__setWithVariants('mag',  'Hunter\'s Mark', {proc:false}); // mark is non-damage but leave as mag if any proc reads it
+__setWithVariants('mag',  'Hunter's Mark', {proc:false}); // mark is non-damage but leave as mag if any proc reads it
 __setWithVariants('mag',  'Premonition',   {proc:false});  // status only; type won’t be used
 
 // If you have unique names not in this list, add them here:
@@ -481,14 +481,14 @@ __setWithVariants('mag',  'Premonition',   {proc:false});  // status only; type 
 /* ---------- jobs & stats ---------- */
 const ALL_CLASSES = ['Warrior','Barbarian','Rogue','Cleric','Mage','Paladin','Archer','Monk','Necromancer','Mystic'];
 const JOBS = {
-  Warrior:  { STR:26,QKN:16,INT:8, TGH:30, kind:'phys', name:'Warrior' },
-  Rogue:    { STR:22,QKN:30,INT:8,TGH:20,  kind:'phys', name:'Rogue' },
+  Warrior:  { STR:26,QKN:16,INT:8, TGH:34, kind:'phys', name:'Warrior' },
+  Rogue:    { STR:22,QKN:30,INT:8,TGH:25,  kind:'phys', name:'Rogue' },
   Cleric:   { STR:7, QKN:18,INT:28,TGH:27, kind:'mag',  name:'Cleric' },
-  Barbarian:{ STR:33,QKN:12, INT:7,TGH:28, kind:'phys', name:'Barbarian' },
-  Mage:     { STR:8, QKN:14,INT:35,TGH:23, kind:'mag',  name:'Mage' },
+  Barbarian:{ STR:33,QKN:12, INT:7,TGH:32, kind:'phys', name:'Barbarian' },
+  Mage:     { STR:8, QKN:14,INT:35,TGH:25, kind:'mag',  name:'Mage' },
   Paladin:  { STR:24,QKN:12,INT:16,TGH:28, kind:'phys', name:'Paladin' },
   Archer:   { STR:22,QKN:27,INT:8, TGH:23, kind:'phys', name:'Archer' },
-  Monk:     { STR:24,QKN:28,INT:8, TGH:20, kind:'phys', name:'Monk' },
+  Monk:     { STR:24,QKN:28,INT:8, TGH:23, kind:'phys', name:'Monk' },
   Necromancer:{STR:7,QKN:14, INT:34,TGH:25, kind:'mag',  name:'Necromancer' },
   Mystic:   { STR:8, QKN:19,INT:31,TGH:22, kind:'mag',  name:'Mystic' }
 };
@@ -619,7 +619,7 @@ case 'Warrior': return [
          applyStatusWithLog(t,'stun',dur,'#b084ff',`${t.name} is stunned for {dur} rounds!`);} return r; } },
 
       {label:'Rampage', desc:'Swing that grants rampage on killshot.', speed:'normal', type:'phys', target:'enemy',
-       base:{min:50,max:90}, statCoef:0.45,
+       base:{min:50,max:100}, statCoef:0.45,
        use:function(a,t){
          const hpBefore = t.hp;
          const r = hit(a,t,{ability:this});
@@ -635,7 +635,7 @@ case 'Warrior': return [
     /* ===== Rogue ===== */
     case 'Rogue': return [
       {label:'Backstab', desc:'Go for the vitals.', speed:'slow', type:'phys', target:'enemy',
-       base:{min:40,max:60}, statCoef:0.40, critBonus:0.75,
+       base:{min:60,max:90}, statCoef:0.40, critBonus:0.75,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:'Attack', desc:'Hard slice at your enemy.', speed:'fast', type:'phys', target:'enemy',
@@ -643,7 +643,7 @@ case 'Warrior': return [
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:'Poison Dagger', desc:'Cover your blade with poison for this attack.', speed:'normal', type:'phys', target:'enemy',
-       base:{min:20,max:45}, statCoef:0.30,
+       base:{min:25,max:45}, statCoef:0.30,
        use:function(a,t){
          const r = hit(a,t,{ability:this});
          if (t.alive() && r.dealt > 0){
@@ -677,7 +677,7 @@ case 'Cleric': return [
     label: 'Defensive Aura',
     desc: 'Quickly heal an ally and bolster their defense.',
     speed: 'fast', type: 'mag', target: 'ally',
-    heal: { min: 15, max: 35 }, healCoef: 0.25, scalesWith: 'SDM',
+    heal: { min: 25, max: 45 }, healCoef: 0.25, scalesWith: 'SDM',
     use: (a, t) => {
       const dur = buffDurBySDM(a);
       pushStatus(t, { key: 'def_up', dur });
@@ -694,7 +694,7 @@ case 'Cleric': return [
     label: 'Attack',
     desc: 'Basic strike with a holy mace.',
     speed: 'normal', type: 'phys', target: 'enemy',
-    base: { min: 8, max: 16 }, statCoef: 0.75, isBasic: true,
+    base: { min: 10, max: 18 }, statCoef: 0.75, isBasic: true,
     use: function(a, t){ return hit(a, t, { ability: this }); }
   },
 
@@ -702,7 +702,7 @@ case 'Cleric': return [
     label: `Enid's Blessing`,
     desc: 'Heal all allies and cure poison.',
     speed: 'slow', type: 'mag', target: 'all-allies',
-    heal: { min: 25, max: 45 }, healCoef: 0.40, scalesWith: 'SDM',
+    heal: { min: 25, max: 55 }, healCoef: 0.40, scalesWith: 'SDM',
     use: (a, arr) => {
       for (const ally of arr){
         if (!ally.alive()) continue;
@@ -762,12 +762,12 @@ case 'Cleric': return [
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:'Meteor', desc:'Fast meteor strike with chance to stun.', speed:'fast', type:'mag', target:'enemy',
-       base:{min:15,max:50}, statCoef:0.45,
+       base:{min:20,max:50}, statCoef:0.45,
        use:function(a,t){ const r=hit(a,t,{ability:this}); if(t.alive() && rand()<0.25){ const dur=ccDurBySDM(a);
          applyStatusWithLog(t,'stun',dur,'#b084ff',`${t.name} is hit with a meteor and dazed for {dur} rounds!`);} return r; } },
 
       {label:'Fireball', desc:'Large fireball that scorches all foes.', speed:'slow', type:'mag', target:'all-enemies',
-       base:{min:20,max:80}, statCoef:0.50, defPen:0.20,
+       base:{min:40,max:80}, statCoef:0.50, defPen:0.20,
        use:function(a,arr){ for(const t of arr){ if(!t.alive()) continue; hit(a,t,{ability:this}); } } },
 
       {label:'Arcane Echo', desc:'Your spells cast twice next turn.', speed:'normal', type:'mag', target:'self',
@@ -777,7 +777,7 @@ case 'Cleric': return [
     /* ===== Paladin ===== */
     case 'Paladin': return [
       {label:'Attack', desc:'Basic sword & board attack.', speed:'normal', type:'phys', target:'enemy',
-       base:{min:45,max:50}, statCoef:0.40, isBasic:true,
+       base:{min:45,max:55}, statCoef:0.40, isBasic:true,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:'Shield Bash', desc:'Quick bash with a small chance to stun.', speed:'fast', type:'phys', target:'enemy',
@@ -810,7 +810,7 @@ case 'Cleric': return [
     /* ===== Archer ===== */
     case 'Archer': return [
       {label:`Ranger's Focus`, desc:'Heal an ally and boost their attack.', speed:'normal', type:'mag', target:'ally',
-       heal:{min:20,max:30}, healCoef:0.25, scalesWith:'ATK',
+       heal:{min:25,max:35}, healCoef:0.25, scalesWith:'ATK',
        use:(a,t)=>{
   const dur = buffDurBySDM(a);
   pushStatus(t,{key:'atk_up', dur});
@@ -822,16 +822,16 @@ case 'Cleric': return [
   appendLog(`${a.name} focuses ${t.name}: ATK↑ (${dur}), healed for ${healed}.`);
 }},
 
-      {label:'Attack', desc:'Loose a precise arrow.', speed:'fast', type:'phys', target:'enemy',
-       base:{min:50,max:55}, statCoef:0.40, isBasic:true,
+      {label:'Attack', desc:'Loose a quick arrow.', speed:'fast', type:'phys', target:'enemy',
+       base:{min:35,max:50}, statCoef:0.40, isBasic:true,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:'Volley', desc:'Rain arrows over the battlefield.', speed:'normal', type:'phys', target:'all-enemies',
-       base:{min:5,max:95}, statCoef:0.30,
+       base:{min:5,max:100}, statCoef:0.30,
        use:function(a,arr){ for(const t of arr){ if(!t.alive()) continue; hit(a,t,{ability:this}); } } },
 
       {label:'Snipe', desc:'Take careful aim for the vitals.', speed:'slow', type:'phys', target:'enemy',
-       base:{min:40,max:130}, statCoef:0.65, critBonus:0.30,
+       base:{min:40,max:150}, statCoef:0.65, critBonus:0.30,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:`Hunter's Mark`, desc:'Target takes increased damage until end of next round.', speed:'normal', type:'phys', target:'enemy',
@@ -871,13 +871,8 @@ case 'Cleric': return [
       {label:'Attack', desc:'Basic attack with chance to drain.', speed:'normal', type:'phys', target:'enemy',
        base:{min:10,max:20}, statCoef:0.40, isBasic:true,
        use:function(a,t){
-         const r = hit(a,t,{ability:this});
-         if (t.alive() && rand() < 0.35){
-           const dur = buffDurBySDM(a);
-           pushStatus(t,{key:'def_down', dur});
-           appendLog(`${t.name} is sapped of vigor (${dur}).`);
-         }
-         return r;
+        const r = hit(a,t,{ability:this});
+        return r;
        }},
 
       {label:'Life Drain', desc:'Steal life from a foe.', speed:'normal', type:'mag', target:'enemy',
@@ -897,7 +892,7 @@ case 'Cleric': return [
        }},
 
       {label:'Plague', desc:'Afflict all foes with massive poison.', speed:'slow', type:'mag', target:'all-enemies',
-       base:{min:10,max:70}, statCoef:0.30,
+       base:{min:10,max:60}, statCoef:0.30,
        use:function(a,arr){
          for (const t of arr){
            if (!t.alive()) continue;
@@ -911,16 +906,17 @@ case 'Cleric': return [
          }
        }},
 
-      {label:'Death Touch', desc:'Crush half the foe’s current life.', speed:'slow', type:'mag', target:'enemy',
-       use:(a,t)=>{
-         if (!t.alive()) return appendLog(`${t.name} is already down.`);
-         const half = Math.floor(t.hp / 2);
-         t.hp = clamp(t.hp - half, 0, t.maxHP);
+      {label:'Death Touch', desc:'Crush a third of the foe’s current life.', speed:'slow', type:'mag', target:'enemy',
+        use:(a,t)=>{
+          if (!t.alive()) return appendLog(`${t.name} is already down.`);
+           const third = Math.floor(t.hp / 3);
+        t.hp = clamp(t.hp - third, 0, t.maxHP);
          t._refresh && t._refresh(); checkHPWarnings(t);
-         appendLogHTML(`<span style="color:#ff6b6b">${a.name} invokes Death Touch! ${t.name} loses ${half} HP.</span>`);
-       }},
+        appendLogHTML(`<span style="color:#ff6b6b">${a.name} invokes Death Touch! ${t.name} loses ${third} HP.</span>`);
+      }},
 
-{label:'Plague Detonation', desc:'Consume all poison for an instant burst.', speed:'normal', type:'mag', target:'all-enemies',
+
+{label:'Plague Detonation', desc:'Consume all poison for an instant burst.', speed:'fast', type:'mag', target:'all-enemies',
   use:(a,arr)=>{
     let hits = 0;
 
@@ -960,20 +956,20 @@ case 'Cleric': return [
 
     /* ===== Mystic ===== */
     case 'Mystic': return [
-      {label:'Stun', desc:'Quickly stun your foe.', speed:'fast', type:'mag', target:'enemy',
+      {label:'Stun', desc:'Quickly stun your foe. 40% success.', speed:'fast', type:'mag', target:'enemy',
        use:(a,t)=>{
-         if(rand()<0.45){ const dur=ccDurBySDM(a);
+         if(rand()<0.40){ const dur=ccDurBySDM(a);
            applyStatusWithLog(t,'stun',dur,'#b084ff',`${a.name} stuns ${t.name} for {dur} rounds!`);
          } else { appendLog(`${a.name}'s Stun fails to take hold.`); }
        } },
 
-      {label:'Attack', desc:'A crack of mental force.', speed:'normal', type:'mag', target:'enemy',
+      {label:'Attack', desc:'Throwing dagger attack which can find weak spots.', speed:'normal', type:'mag', target:'enemy',
        base:{min:20,max:25}, scalesWith:'SDM', statCoef:0.40, isBasic:true,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
-      {label:'Berserk', desc:'Target loses control; may attack anyone.', speed:'normal', type:'mag', target:'enemy',
+      {label:'Berserk', desc:'Target loses control; will attack anyone. 45% success.', speed:'normal', type:'mag', target:'enemy',
        use:(a,t)=>{
-         if(rand()<0.50){ const dur=ccDurBySDM(a);
+         if(rand()<0.45){ const dur=ccDurBySDM(a);
            applyStatusWithLog(t,'berserk',dur,'#b084ff',`${a.name} drives ${t.name} absolutely berserk for {dur} rounds!`);
          } else { appendLog(`${a.name}'s Berserk fails to take hold.`); }
        } },
@@ -1007,7 +1003,7 @@ function pushStatus(u, st){
   if (STACKABLE.has(st.key)){ const dur=Math.max(1, st.dur|0); u.status.push({ key:st.key, dur, data:{ stack:1 } }); }
   else if (st.key==='stun'||st.key==='blind'||st.key==='berserk'||st.key==='taunt'){
     const existing = u.status.find(s=>s.key===st.key);
-    if (existing){ const cap=CONFIG.CC_MAX_CAP??8; existing.dur=Math.min(cap, existing.dur+Math.floor((st.dur|0)*0.5)); }
+    if (existing){ const cap=CONFIG.CC_MAX_CAP??7; existing.dur=Math.min(cap, existing.dur+Math.floor((st.dur|0)*0.5)); }
     else { u.status.push({ key:st.key, dur:st.dur|0, data:st.data }); }
   } else { u.status.push(st); }
   updateStatusView(u);
@@ -1085,7 +1081,7 @@ function defMult(u){
 /* ---------- combat math (damage) ---------- */
 function critChance(attacker, type){
   const q=JOBS[attacker.job].QKN, it=JOBS[attacker.job].INT;
-  const BASE=CONFIG.CRIT_BASE??0.10, CAP=CONFIG.CRIT_CAP??0.40;
+  const BASE=CONFIG.CRIT_BASE??0.05, CAP=CONFIG.CRIT_CAP??0.40;
   const PER_Q=CONFIG.CRIT_QKN_FACTOR??0.005, PER_I=CONFIG.CRIT_INT_FACTOR??0.005;
   let p = BASE + (type==='phys' ? q*PER_Q : it*PER_I);
   return Math.min(CAP, Math.max(0,p));
@@ -1374,7 +1370,7 @@ function hit(a, t, opt={}, verb){
   if (opt.dmgMult) dmgToApply = Math.floor(dmgToApply * opt.dmgMult);
 
   if (hasStatus(target,'divine_shield') && dmgToApply>0){ appendLogHTML(`${target.name} is protected by <span style="color:#ffd700">Divine Shield</span>! No damage taken.`); dmgToApply=0; }
-  if (hasStatus(target,'marked') && dmgToApply>0){ dmgToApply=Math.floor(dmgToApply*(CONFIG.MARKED_MULT||1.5)); }
+  if (hasStatus(target,'marked') && dmgToApply>0){ dmgToApply=Math.floor(dmgToApply*(CONFIG.MARKED_MULT||1.8)); }
   if (hasStatus(target,'guard') && dmgToApply>0){
     const pctFromStatus=target.status.find(s=>s.key==='guard')?.data?.pct;
     const guardPct=Number.isFinite(pctFromStatus)?pctFromStatus:(window.GUARD_REDUCTION??0.5);
@@ -1996,12 +1992,17 @@ ensureUnitSides();
     this.reflow();
     this.scale.on('resize', ()=> this.reflow());
 
-    // round UI (safe even if empty—buttons will be hidden by waiting state)
-    roundNumber = 1;
-    resetRoundState();
-    updateTopBarForCurrentSelection();
-    renderActionBarForCurrent();
-  }
+// round UI + action bar ONLY in battle
+if (PVP.phase === 'battle') {
+  roundNumber = 1;
+  resetRoundState();
+  updateTopBarForCurrentSelection();
+  renderActionBarForCurrent();
+} else {
+  // lobby/idle: clear battle UI
+  clearCombatUI();
+  setTopBarLobby();
+}
 
   updateBackgroundLayout(){
     const W = this.scale.width, H = this.scale.height;
@@ -2594,7 +2595,6 @@ enterLobbyUI();
   };
 
   row.appendChild(mk('Return to Lobby', toLobby));
-  row.appendChild(mk('Play Again',      playAgain));
   card.appendChild(row);
   ov.appendChild(card);
   document.body.appendChild(ov);
@@ -2949,6 +2949,50 @@ function updateDraftUI(){
   if (!pool.children.length){
     const empty=document.createElement('div'); empty.style.cssText='opacity:.8;font-size:13px;padding:12px;'; empty.textContent=q?'No classes match your filter.':'No classes remaining.'; pool.appendChild(empty);
   }
+}
+
+function clearCombatUI(){
+  // Clear combat log (adjust id if yours differs)
+  const log = document.getElementById('combatLog') || document.getElementById('combat-log');
+  if (log) log.innerHTML = '';
+
+  // Clear / hide action bar (adjust id if yours differs)
+  const bar = document.getElementById('actionBar') || document.getElementById('action-bar');
+  if (bar) { bar.innerHTML = ''; bar.style.display = 'none'; }
+
+  // Clear other battle-only UI (if you have it)
+  const hud = document.getElementById('battleHUD') || document.getElementById('battle-hud');
+  if (hud) hud.style.display = 'none';
+
+  // Clear any pending targeting state you use
+  window._pendingTargetPick = false;
+  window._pendingAbility = null;
+  window._pendingAbilityTarget = null;
+}
+
+function returnToLobby(){
+  // Phase + match state
+  PVP.phase = 'idle';
+  PVP.matchId = null;
+  PVP.roomId = null;
+  PVP.role = null;
+  PVP._readyForBattle = false;
+
+  // Clear units so Phaser panels don’t keep drawing old match
+  player = [];
+  enemy  = [];
+
+  // Clear right-side DOM UI
+  clearCombatUI();
+
+  // Rebuild Phaser panels empty (if scene is alive)
+  if (sceneRef && typeof sceneRef.rebuildPanels === 'function') {
+    sceneRef.rebuildPanels();
+  }
+
+  // Show lobby overlay + lobby top bar
+  mountLobbyInField();
+  setTopBarLobby();
 }
 
 
