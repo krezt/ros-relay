@@ -362,19 +362,19 @@ const choice=(arr)=> arr[(rand()*arr.length)|0];
 
 /* ---------- config ---------- */
 const CONFIG = {
-  BASE_HP: 50, HP_PER_TGH: 20,
+  BASE_HP: 54, HP_PER_TGH: 23,
   ATK_PER_STR: 1.5, SDM_PER_INT: 1.5,
   DEF_FROM_TGH: 0.75, DEF_FROM_QKN: 0.75,
 
-  CC_BASE_MIN: 2, CC_BASE_MAX: 5, CC_SDM_PER_BONUS: 15, CC_MAX_CAP: 8,
-  CRIT_BASE: 0.10, CRIT_CAP: 0.40, CRIT_QKN_FACTOR: 0.005, CRIT_INT_FACTOR: 0.005,
+  CC_BASE_MIN: 2, CC_BASE_MAX: 4, CC_SDM_PER_BONUS: 15, CC_MAX_CAP: 6,
+  CRIT_BASE: 0.05, CRIT_CAP: 0.40, CRIT_QKN_FACTOR: 0.005, CRIT_INT_FACTOR: 0.005,
   DODGE_BASE: 0.025, DODGE_QKN_FACTOR: 0.0025, DODGE_CAP: 0.15,
 
   ARMOR_K: 0.025, DAMAGE_GLOBAL: 1.20,
 
-  SHRUG_BASE: 0.025, SHRUG_TGH_FACTOR: 0.0025,
+  SHRUG_BASE: 0.05, SHRUG_TGH_FACTOR: 0.0025,
 
-  BUFF_BASE_MIN: 2, BUFF_BASE_MAX: 7, BUFF_SDM_PER_BONUS: 15, BUFF_MAX_CAP: 9,
+  BUFF_BASE_MIN: 2, BUFF_BASE_MAX: 5, BUFF_SDM_PER_BONUS: 15, BUFF_MAX_CAP: 7,
 
   PROC: {
     Cleric: { chance: 0.5 }, Mage: { chance: 0.5 }, Monk: { chance: 0.6 },
@@ -384,24 +384,22 @@ const CONFIG = {
   STACKS: { atk_up:{per:0.5,max:4}, sdm_up:{per:0.5,max:4}, def_up:{per:0.33,max:4}, def_down:{per:0.25,max:4} },
 
   MARKED_MULT: 2.0,
-  ECHO_MULT: 1.20,
-  SHIELDWALL_GUARD: 0.35,
+  ECHO_MULT: 1.25,
+  SHIELDWALL_GUARD: 0.15,
   COUNTER_COEF: 0.30,
   STATCOEF_OVERRIDE: 1.0, // keep 1.0 to simplify tuning
   NO_GLOBAL_MULT: true,
   IGNORE_DEFPEN: false
 };
 
-/* ---------- ability type overrides ---------- */
-window.ABILITY_TYPE_OVERRIDES = window.ABILITY_TYPE_OVERRIDES || {};
-window.ABILITY_TYPE_OVERRIDES['Fireball'] = 'mag';
-window.ABILITY_TYPE_OVERRIDES['Shield Bash'] = 'phys';
-window.ABILITY_TYPE_OVERRIDES['Lightning Bolt (proc)'] = 'mag';
-window.ABILITY_TYPE_OVERRIDES['Life Drip (proc)']     = 'mag';
+window.STATUS_ICON_SIZE = 36;   // try 28, 32, 36
 
+
+/* ---------- ability type overrides ---------- */
 // ---------- Ability damage-type overrides (mag vs phys) ----------
 // Safe init
 window.ABILITY_TYPE_OVERRIDES = window.ABILITY_TYPE_OVERRIDES || Object.create(null);
+
 
 // Helper: set many labels to a type at once
 function __setType(type, labels){
@@ -470,7 +468,7 @@ __setWithVariants('phys', 'Snipe');
 __setWithVariants('mag',  'Piercing Light');       // (already set above, but safe)
 __setWithVariants('mag',  'Sanctify');             // (already set above, but safe)
 __setWithVariants('phys', 'Poison Dagger');        // base hit is phys; its poison DoT is mag (set separately above)
-__setWithVariants('mag',  'Hunter's Mark', {proc:false}); // mark is non-damage but leave as mag if any proc reads it
+__setWithVariants('mag',  'Hunter\'s Mark', {proc:false}); // mark is non-damage but leave as mag if any proc reads it
 __setWithVariants('mag',  'Premonition',   {proc:false});  // status only; type won’t be used
 
 // If you have unique names not in this list, add them here:
@@ -481,16 +479,16 @@ __setWithVariants('mag',  'Premonition',   {proc:false});  // status only; type 
 /* ---------- jobs & stats ---------- */
 const ALL_CLASSES = ['Warrior','Barbarian','Rogue','Cleric','Mage','Paladin','Archer','Monk','Necromancer','Mystic'];
 const JOBS = {
-  Warrior:  { STR:26,QKN:16,INT:8, TGH:34, kind:'phys', name:'Warrior' },
-  Rogue:    { STR:22,QKN:30,INT:8,TGH:25,  kind:'phys', name:'Rogue' },
-  Cleric:   { STR:7, QKN:18,INT:28,TGH:27, kind:'mag',  name:'Cleric' },
-  Barbarian:{ STR:33,QKN:12, INT:7,TGH:32, kind:'phys', name:'Barbarian' },
-  Mage:     { STR:8, QKN:14,INT:35,TGH:25, kind:'mag',  name:'Mage' },
-  Paladin:  { STR:24,QKN:12,INT:16,TGH:28, kind:'phys', name:'Paladin' },
-  Archer:   { STR:22,QKN:27,INT:8, TGH:23, kind:'phys', name:'Archer' },
-  Monk:     { STR:24,QKN:28,INT:8, TGH:23, kind:'phys', name:'Monk' },
-  Necromancer:{STR:7,QKN:14, INT:34,TGH:25, kind:'mag',  name:'Necromancer' },
-  Mystic:   { STR:8, QKN:19,INT:31,TGH:22, kind:'mag',  name:'Mystic' }
+  Warrior:  { STR:26,QKN:16,INT:8, TGH:36, kind:'phys', name:'Warrior' },
+  Rogue:    { STR:22,QKN:30,INT:8,TGH:27,  kind:'phys', name:'Rogue' },
+  Cleric:   { STR:7, QKN:18,INT:28,TGH:29, kind:'mag',  name:'Cleric' },
+  Barbarian:{ STR:33,QKN:12, INT:7,TGH:34, kind:'phys', name:'Barbarian' },
+  Mage:     { STR:8, QKN:14,INT:35,TGH:27, kind:'mag',  name:'Mage' },
+  Paladin:  { STR:24,QKN:12,INT:16,TGH:30, kind:'phys', name:'Paladin' },
+  Archer:   { STR:22,QKN:25,INT:8, TGH:26, kind:'phys', name:'Archer' },
+  Monk:     { STR:24,QKN:28,INT:8, TGH:25, kind:'phys', name:'Monk' },
+  Necromancer:{STR:7,QKN:14, INT:34,TGH:27, kind:'mag',  name:'Necromancer' },
+  Mystic:   { STR:8, QKN:26,INT:31,TGH:24, kind:'mag',  name:'Mystic' }
 };
 function deriveStats(job){
   const HP  = CONFIG.BASE_HP + job.TGH*CONFIG.HP_PER_TGH;
@@ -544,7 +542,7 @@ function abilitiesFor(u){
     /* ===== Warrior ===== */
 case 'Warrior': return [
   {label:'Attack', desc:'Good old sword and board.', speed:'normal', type:'phys', target:'enemy',
-   base:{min:40,max:55}, statCoef:0.35, isBasic:true,
+   base:{min:45,max:75}, statCoef:0.35, isBasic:true,
    use:function(a,t){ return hit(a,t,{ability:this}); } },
 
   {label:'Warhorn', desc:'Heal and briefly bolster yourself with strength and ability quickness.',
@@ -569,7 +567,7 @@ case 'Warrior': return [
      appendLog(`${a.name} sounds the Warhorn and surges with a burst of strength and quickness. ${a.name} is healed for ${a.hp - before}.`);
    }}, // <-- important comma here
 
-  {label:'Power Strike', desc:'Slow, heavy blow.', speed:'slow', type:'phys', target:'enemy',
+  {label:'Power Strike', desc:'Slow, potentially heavy blow.', speed:'slow', type:'phys', target:'enemy',
    base:{min:40,max:120}, statCoef:0.60,
    use:function(a,t){ return hit(a,t,{ability:this}); } },
 
@@ -588,7 +586,7 @@ case 'Warrior': return [
   {label:'Shieldwall', desc:'Allies gain mitigation; intercept first hit.', speed:'fast', type:'phys', target:'all-allies',
    use:(a,arr)=>{
      for (const ally of arr){
-       pushStatus(ally, { key:'guard', dur:1, data:{ pct:(CONFIG.SHIELDWALL_GUARD||0.35) }});
+       pushStatus(ally, { key:'guard', dur:1, data:{ pct:(CONFIG.SHIELDWALL_GUARD||0.15) }});
      }
      pushStatus(a, { key:'shield_redirect', dur:1, data:{ remaining:1 }});
      appendLogHTML(`${a.name} raises <b>Shieldwall</b> to protect the team!`);
@@ -599,11 +597,11 @@ case 'Warrior': return [
     /* ===== Barbarian ===== */
     case 'Barbarian': return [
       {label:'Attack', desc:'A consistently strong basic attack.', speed:'normal', type:'phys', target:'enemy',
-       base:{min:60,max:65}, statCoef:0.40, isBasic:true,
+       base:{min:65,max:75}, statCoef:0.40, isBasic:true,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:'Rend', desc:'Expose your target’s weakness.', speed:'slow', type:'phys', target:'enemy',
-       base:{min:40,max:90}, statCoef:0.35,
+       base:{min:60,max:90}, statCoef:0.35,
        use:function(a,t){ const r=hit(a,t,{ability:this});
          if(t.alive()){ const dur=buffDurBySDM(a); pushStatus(t,{key:'def_down', dur}); appendLog(`${t.name}’s defense is lowered (${dur}).`);} return r; } },
 
@@ -614,12 +612,12 @@ case 'Warrior': return [
          appendLog(`All enemies’ defense is reduced (${dur}).`); } },
 
       {label:'Smash', desc:'Crushing blow with chance to stun.', speed:'slow', type:'phys', target:'enemy',
-       base:{min:30,max:90}, statCoef:0.55,
+       base:{min:50,max:90}, statCoef:0.55,
        use:function(a,t){ const r=hit(a,t,{ability:this}); if(t.alive() && rand()<0.25){ const dur=ccDurBySDM(a);
          applyStatusWithLog(t,'stun',dur,'#b084ff',`${t.name} is stunned for {dur} rounds!`);} return r; } },
 
       {label:'Rampage', desc:'Swing that grants rampage on killshot.', speed:'normal', type:'phys', target:'enemy',
-       base:{min:50,max:100}, statCoef:0.45,
+       base:{min:50,max:110}, statCoef:0.45,
        use:function(a,t){
          const hpBefore = t.hp;
          const r = hit(a,t,{ability:this});
@@ -635,11 +633,11 @@ case 'Warrior': return [
     /* ===== Rogue ===== */
     case 'Rogue': return [
       {label:'Backstab', desc:'Go for the vitals.', speed:'slow', type:'phys', target:'enemy',
-       base:{min:60,max:90}, statCoef:0.40, critBonus:0.75,
+       base:{min:60,max:90}, statCoef:0.40, critBonus:0.95,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:'Attack', desc:'Hard slice at your enemy.', speed:'fast', type:'phys', target:'enemy',
-       base:{min:45,max:50}, statCoef:0.45, isBasic:true,
+       base:{min:30,max:70}, statCoef:0.45, isBasic:true,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:'Poison Dagger', desc:'Cover your blade with poison for this attack.', speed:'normal', type:'phys', target:'enemy',
@@ -663,12 +661,28 @@ case 'Warrior': return [
          return r;
        }},
 
-      {label:'Smoke Bomb', desc:'Blind all enemies this round.', speed:'fast', type:'phys', target:'all-enemies',
-       use:(a,arr)=>{
-         let n = 0;
-         for (const t of arr){ if (!t.alive()) continue; pushStatus(t,{key:'blind', dur:1}); n++; }
-         appendLogHTML(`${a.name} throws <b>Smoke Bomb</b>! ${n} enemies are blinded this round.`);
-       }}
+     {label:'Smoke Bomb', desc:'Blind all enemies this round and heal for 15% of max HP.', speed:'fast', type:'phys', target:'all-enemies',
+  use:(a,arr)=>{
+    // blind enemies
+    let n = 0;
+    for (const t of arr){
+      if (!t.alive()) continue;
+      pushStatus(t,{key:'blind', dur:1});
+      n++;
+    }
+
+    // heal self for 15% of max HP
+    const healAmt = Math.max(1, Math.floor(a.maxHP * 0.15));
+    const before  = a.hp;
+    a.hp = clamp(a.hp + healAmt, 0, a.maxHP);
+    const healed = a.hp - before;
+    a._refresh && a._refresh();
+    checkHPWarnings(a);
+
+    appendLogHTML(`${a.name} throws <b>Smoke Bomb</b>! ${n} enemies are blinded this round. ${a.name} recovers ${healed} HP.`);
+  }
+}
+
     ];
 
     /* ===== Cleric ===== */
@@ -681,7 +695,7 @@ case 'Cleric': return [
     use: (a, t) => {
       const dur = buffDurBySDM(a);
       pushStatus(t, { key: 'def_up', dur });
-      const H = computeAbilityHeal(a, t, { heal: { min: 15, max: 30 }, healCoef: 0.25, scalesWith: 'SDM', type: 'mag' });
+      const H = computeAbilityHeal(a, t, { heal: { min: 25, max: 45 }, healCoef: 0.25, scalesWith: 'SDM', type: 'mag' });
       const before = t.hp;
       t.hp = clamp(t.hp + H, 0, t.maxHP);
       const healed = t.hp - before;
@@ -694,7 +708,7 @@ case 'Cleric': return [
     label: 'Attack',
     desc: 'Basic strike with a holy mace.',
     speed: 'normal', type: 'phys', target: 'enemy',
-    base: { min: 10, max: 18 }, statCoef: 0.75, isBasic: true,
+    base: { min: 10, max: 20 }, statCoef: 0.75, isBasic: true,
     use: function(a, t){ return hit(a, t, { ability: this }); }
   },
 
@@ -706,7 +720,7 @@ case 'Cleric': return [
     use: (a, arr) => {
       for (const ally of arr){
         if (!ally.alive()) continue;
-        const H = computeAbilityHeal(a, ally, { heal:{ min:15, max:45 }, healCoef:0.40, scalesWith:'SDM', type:'mag' });
+        const H = computeAbilityHeal(a, ally, { heal:{ min:25, max:55 }, healCoef:0.40, scalesWith:'SDM', type:'mag' });
         const before = ally.hp;
         ally.hp = clamp(ally.hp + H, 0, ally.maxHP);
         removeStatusKey(ally, 'poison');
@@ -720,7 +734,7 @@ case 'Cleric': return [
     label: 'Piercing Light',
     desc: 'Holy bolt that pierces defense.',
     speed: 'slow', type: 'mag', target: 'enemy',
-    base: { min: 35, max: 70 }, statCoef: 0.55, defPen: 0.25,
+    base: { min: 40, max: 70 }, statCoef: 0.55, defPen: 0.25,
     use: function(a, t){ return hit(a, t, { ability: this }); }
   },
 
@@ -823,7 +837,7 @@ case 'Cleric': return [
 }},
 
       {label:'Attack', desc:'Loose a quick arrow.', speed:'fast', type:'phys', target:'enemy',
-       base:{min:35,max:50}, statCoef:0.40, isBasic:true,
+       base:{min:45,max:55}, statCoef:0.40, isBasic:true,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:'Volley', desc:'Rain arrows over the battlefield.', speed:'normal', type:'phys', target:'all-enemies',
@@ -831,7 +845,7 @@ case 'Cleric': return [
        use:function(a,arr){ for(const t of arr){ if(!t.alive()) continue; hit(a,t,{ability:this}); } } },
 
       {label:'Snipe', desc:'Take careful aim for the vitals.', speed:'slow', type:'phys', target:'enemy',
-       base:{min:40,max:150}, statCoef:0.65, critBonus:0.30,
+       base:{min:60,max:150}, statCoef:0.65, critBonus:0.30,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
       {label:`Hunter's Mark`, desc:'Target takes increased damage until end of next round.', speed:'normal', type:'phys', target:'enemy',
@@ -843,8 +857,8 @@ case 'Cleric': return [
 
     /* ===== Monk ===== */
     case 'Monk': return [
-      {label:'Flurry', desc:'Three successive strikes.', speed:'normal', type:'phys', target:'enemy',
-       base:{min:25,max:40}, statCoef:0.25,
+      {label:'Flurry', desc:'Three successive strikes.', speed:'slow', type:'phys', target:'enemy',
+       base:{min:30,max:65}, statCoef:0.25,
        use:function(a,t){ for(let i=1;i<=3;i++){ if(!t.alive()) break;
          a._usingAbilityLabel = `Flurry (${i}/3)`; hit(a,t,{ability:this}); a._usingAbilityLabel = undefined; } } },
 
@@ -852,7 +866,7 @@ case 'Cleric': return [
        base:{min:40,max:50}, statCoef:0.40, isBasic:true,
        use:function(a,t){ return hit(a,t,{ability:this}); } },
 
-      {label:'Chi Wave', desc:'Cleanse CC/debuffs from all allies.', speed:'normal', type:'mag', target:'all-allies',
+      {label:'Chi Wave', desc:'Cleanse CC/debuffs from all allies.', speed:'fast', type:'mag', target:'all-allies',
        use:(a,arr)=>{ let count=0; for(const ally of arr){ if(!ally.alive()) continue;
          if(cleanseCCAndDebuffs(ally)) count++; updateStatusView(ally); }
          appendLog(count ? `A Chi Wave rips accross the battlefield. Negative effects washed away from ${count} allies.` : `No negative effects to cleanse.`); } },
@@ -992,6 +1006,122 @@ case 'Cleric': return [
   }
 }
 
+/* =========================
+   VFX (COSMETIC ONLY)
+   - No rand()
+   - No game-state changes
+   ========================= */
+
+function getScene(){
+  return (typeof sceneRef !== 'undefined' && sceneRef && sceneRef.add) ? sceneRef : null;
+}
+
+function panelCenterWorld(u){
+  // Uses the unit panel container position (which is in the scene)
+  // and returns an approximate center point for projectiles/text.
+  if (!u?._ui?.panel) return null;
+  const p = u._ui.panel;
+  const scene = u._ui.scene || getScene();
+  if (!scene) return null;
+
+  // Container origin is top-left of panel
+  const x = p.x + (scene.PANEL_W || 380) * 0.5;
+  const y = p.y + (scene.PANEL_H || 120) * 0.35; // slightly above center feels better
+  return { x, y };
+}
+
+function vfxFlashPanel(u, { ms=120 } = {}){
+  const scene = getScene();
+  const panel = u?._ui?.panel;
+  if (!scene || !panel) return;
+
+  // quick white flash via alpha pulse
+  scene.tweens.add({
+    targets: panel,
+    alpha: { from: 1, to: 0.35 },
+    duration: ms,
+    yoyo: true,
+    ease: 'Quad.easeOut'
+  });
+}
+
+function vfxShakePanel(u, { px=6, ms=120 } = {}){
+  const scene = getScene();
+  const panel = u?._ui?.panel;
+  if (!scene || !panel) return;
+
+  const x0 = panel.x, y0 = panel.y;
+  scene.tweens.add({
+    targets: panel,
+    x: x0 + px,
+    y: y0,
+    duration: ms,
+    yoyo: true,
+    repeat: 2,
+    ease: 'Sine.easeInOut',
+    onComplete: () => { panel.x = x0; panel.y = y0; }
+  });
+}
+
+function vfxFloatText(u, text, { ms=650, fontSize=20 } = {}){
+  const scene = getScene();
+  const pos = panelCenterWorld(u);
+  if (!scene || !pos) return;
+
+  const t = scene.add.text(pos.x, pos.y, text, {
+    fontFamily: 'monospace',
+    fontSize: `${fontSize}px`,
+    fontStyle: 'bold',
+    color: '#ffffff',
+    stroke: '#000000',
+    strokeThickness: 4
+  }).setOrigin(0.5, 0.5).setDepth(9999);
+
+  scene.tweens.add({
+    targets: t,
+    y: pos.y - 26,
+    alpha: 0,
+    duration: ms,
+    ease: 'Quad.easeOut',
+    onComplete: () => t.destroy()
+  });
+}
+
+function vfxProjectile(a, t, { key=null, ms=260 } = {}){
+  const scene = getScene();
+  const from = panelCenterWorld(a);
+  const to   = panelCenterWorld(t);
+  if (!scene || !from || !to) return;
+
+  // Minimal “dot projectile” using a circle Graphics (no assets required)
+  const g = scene.add.graphics().setDepth(9998);
+  g.fillStyle(0xffffff, 1);
+  g.fillCircle(0, 0, 5);
+  g.x = from.x; g.y = from.y;
+
+  scene.tweens.add({
+    targets: g,
+    x: to.x,
+    y: to.y,
+    duration: ms,
+    ease: 'Quad.easeInOut',
+    onComplete: () => g.destroy()
+  });
+}
+
+// Optional: call once to animate KO a little
+function vfxKO(u){
+  const scene = getScene();
+  const panel = u?._ui?.panel;
+  if (!scene || !panel) return;
+  scene.tweens.add({
+    targets: panel,
+    alpha: { from: panel.alpha, to: 0.55 },
+    duration: 120,
+    ease: 'Quad.easeOut'
+  });
+}
+
 /* ===== PART 2/4 — ENGINE HELPERS ===== */
 
 /* ---------- Status & stacking ---------- */
@@ -1063,11 +1193,14 @@ function applyStatusWithLog(target, statusKey, dur, colorHex, text){
 /* ---------- deterministic picks (no RNG before seeding) ---------- */
 function pickCanonical(arr){
   if (!arr || !arr.length) return null;
-  return [...arr].sort((a,b)=> (a.name||'').localeCompare(b.name||''))[0];
+  return [...arr].sort((a,b)=>{
+    const A = String(a.netId ?? '');
+    const B = String(b.netId ?? '');
+    return A < B ? -1 : (A > B ? 1 : 0);
+  })[0];
 }
-function pickDeterministic(arr){ // safe alias
-  return pickCanonical(arr);
-}
+function pickDeterministic(arr){ return pickCanonical(arr); }
+
 
 /* ---------- multipliers ---------- */
 function atkMult(u){ const cfg=CONFIG.STACKS?.atk_up||{per:0.30,max:4}; const n=Math.min(countStacks(u,'atk_up'),cfg.max); return Math.pow(1+cfg.per, n); }
@@ -1234,7 +1367,7 @@ function updateStatusView(u){
 /* ---------- end-of-round ticks & shrug ---------- */
 const SHRUG_MESSAGES={ poison:(u)=>`${u.name} shrugs off the poison like it was nothing!`, stun:(u)=>`${u.name} snaps out of it and is no longer stunned!`, blind:(u)=>`${u.name} regains vision!`, berserk:(u)=>`${u.name}'s bloodlust wears off!`, def_down:(u)=>`${u.name} feels less vulnerable to attacks!` };
 function tryShrug(u,key){
-  const tgh=JOBS[u.job].TGH; const p=(CONFIG.SHRUG_BASE??0.045)+tgh*(CONFIG.SHRUG_TGH_FACTOR??0.005);
+  const tgh=JOBS[u.job].TGH; const p=(CONFIG.SHRUG_BASE??0.05)+tgh*(CONFIG.SHRUG_TGH_FACTOR??0.005);
   if(chance(p)){ const before=u.status.length; u.status=u.status.filter(s=>s.key!==key);
     if(u.status.length!==before){ const msgFn=SHRUG_MESSAGES[key]; if(msgFn) appendLog(msgFn(u)); updateStatusView(u); }
     return true;
@@ -1363,7 +1496,12 @@ function hit(a, t, opt={}, verb){
   const res = looksLikeAbility ? computeAbilityDamage(a,target,ability) : calcDamage(a,target,opt);
   const abilityName = (a._usingAbilityLabel || (verb ? verb : (ability ? ability.label : (opt.type==='mag'?'spell':'attack'))));
 
-  if (res.dodged){ appendLogHTML(`${target.name} <span style="color:skyblue">dodges</span> ${a.name}’s ${abilityName}!`); return {dealt:0,dodged:true,crit:false}; }
+  if (res.dodged){
+  vfxFlashPanel(a, { ms: 80 });
+  vfxFlashPanel(target, { ms: 80 });
+  appendLogHTML(`${target.name} <span style="color:skyblue">dodges</span> ${a.name}’s ${abilityName}!`);
+  return {dealt:0,dodged:true,crit:false};
+}
 
   let dmgToApply=res.dmg;
   if (a._echoing) dmgToApply = Math.floor(dmgToApply * (a._echoMult || CONFIG.ECHO_MULT || 1.05));
@@ -1382,6 +1520,14 @@ function hit(a, t, opt={}, verb){
   target._refresh && target._refresh();
   checkHPWarnings(target);
 
+// ---- VFX: impact (cosmetic only) ----
+if (dmgToApply > 0){
+  vfxProjectile(a, target);         // optional but feels great
+  vfxShakePanel(target, { px: 6 });
+  vfxFlashPanel(target, { ms: 110 });
+  vfxFloatText(target, `-${dmgToApply}`, { fontSize: res.crit ? 26 : 20 });
+}
+
   if (abilityName.toLowerCase()==='attack'){
     if (res.crit) appendLogHTML(`${a.name}’s attack lands a <span style="color:gold">critical strike</span>! ${target.name} takes ${dmgToApply} damage.`);
     else          appendLog(`${a.name} attacks ${target.name} for ${dmgToApply} damage.`);
@@ -1390,21 +1536,40 @@ function hit(a, t, opt={}, verb){
     else          appendLog(`${a.name} uses ${abilityName}. ${target.name} takes ${dmgToApply} damage.`);
   }
 
-  if (dmgToApply>0 && target.hp<=0){
+  // --- KO handling (one-time VFX per death, supports revive) ---
+if (dmgToApply > 0 && target.hp <= 0){
   appendLogHTML(`<span style="color:#ff6b6b">☠ ${target.name} is down!</span>`);
-  if (target._ui){ target._refresh && target._refresh(); } // draw KO X via _refresh
-}
 
-
-  if (ability?.isBasic && dmgToApply>0 && target.alive()){ maybeProcOnBasic(a,target); }
-
-  if (!opt._noCounter && target.alive() && a.alive() && hasStatus(target,'counter')){
-    const counter={label:'Counter', type:'phys', target:'enemy', base:{min:8,max:14}, scalesWith:'ATK', statCoef:(CONFIG.COUNTER_COEF||0.30)};
-    const oldLabel=target._usingAbilityLabel; target._usingAbilityLabel='Counter';
-    hit(target,a,{ability:counter,_noCounter:true,_noRedirect:true},'counterstrikes'); target._usingAbilityLabel=oldLabel;
+  // Only play KO VFX once per death event
+  if (!target._didKOVFX){
+    target._didKOVFX = true;
+    vfxKO(target);
   }
-  return {dealt:dmgToApply,dodged:false,crit:res.crit};
+
+  // draw KO X via _refresh
+  if (target._ui) target._refresh && target._refresh();
+} else {
+  // If they're alive, clear the KO-vfx latch so future deaths can animate again
+  if (target._didKOVFX) target._didKOVFX = false;
 }
+
+// Basic-attack proc (only if target survived)
+if (ability?.isBasic && dmgToApply > 0 && target.alive()){
+  maybeProcOnBasic(a, target);
+}
+
+// Counter
+if (!opt._noCounter && target.alive() && a.alive() && hasStatus(target,'counter')){
+  const counter = {label:'Counter', type:'phys', target:'enemy', base:{min:8,max:14}, scalesWith:'ATK', statCoef:(CONFIG.COUNTER_COEF||0.30)};
+  const oldLabel = target._usingAbilityLabel;
+  target._usingAbilityLabel = 'Counter';
+  hit(target, a, {ability:counter, _noCounter:true, _noRedirect:true}, 'counterstrikes');
+  target._usingAbilityLabel = oldLabel;
+}
+
+return {dealt:dmgToApply, dodged:false, crit:res.crit};
+}
+
 
 /* ===== PART 3/4 — Parties, UI, Scene, Round ===== */
 
@@ -2004,7 +2169,9 @@ if (PVP.phase === 'battle') {
   setTopBarLobby();
 }
 
-  updateBackgroundLayout(){
+}
+
+updateBackgroundLayout(){
     const W = this.scale.width, H = this.scale.height;
     if (this.bgImage){
       const tex = this.textures.get('arena_bg').getSourceImage();
@@ -2211,7 +2378,10 @@ window.addEventListener('load', ()=>{
   // ✅ ensure PVP exists and lobby mounts after boot
   if (window.PVP && (PVP.phase === 'idle' || !PVP.phase)) {
     PVP.phase = 'idle';
-    setTimeout(showLobby, 0);
+    setTimeout(() => {
+  if (typeof showLobby === 'function') showLobby();
+}, 0);
+
   }
 
   if ('ResizeObserver' in window){
@@ -2226,7 +2396,6 @@ window.addEventListener('load', ()=>{
 
 window.addEventListener('resize', resizePhaserToBattlefield);
 
-<!-- (continues same <script> tag) -->
 
 /* ---------- PvP bootstrap ---------- */
 (function bootstrapPVP(){
@@ -2251,6 +2420,8 @@ window.addEventListener('resize', resizePhaserToBattlefield);
   P.myName = P.myName || 'You';
 })();
 
+const DRAFT_ORDER = ['host','guest','guest','host','guest','host']; // A–B–B–A–B–A
+
 function ensureRoundBuf(){
   PVP.roundBuf = PVP.roundBuf || { mine:{}, opp:{}, host:{}, guest:{} };
   PVP.roundBuf.mine  ||= {};
@@ -2258,6 +2429,7 @@ function ensureRoundBuf(){
   PVP.roundBuf.host  ||= {};
   PVP.roundBuf.guest ||= {};
 }
+ensureRoundBuf();
 
 /* ---------- light DOM helper (scoped) ---------- */
 function el(tag, attrs = {}, ...kids){
@@ -2282,19 +2454,20 @@ function send(msg){
 }
 
 let _wsOpenPromise = null;
+
 function connectWS(){
   if (PVP.ws && (PVP.ws.readyState === WebSocket.OPEN || PVP.ws.readyState === WebSocket.CONNECTING)){
     return _wsOpenPromise || Promise.resolve();
   }
+
   _wsOpenPromise = new Promise((resolve)=>{
-    const roomId = PVP.roomId || 'lobby'; // your code already sets this on create/join
+
+    const roomId = PVP.roomId || 'lobby';
     const RELAY_ORIGIN = 'wss://ros-relay.onrender.com/ws';
     const RELAY_URL = RELAY_ORIGIN + '?room=' + encodeURIComponent(roomId);
 
-    const ws = new WebSocket(RELAY_URL);   // <— changed line
+    const ws = new WebSocket(RELAY_URL);
     PVP.ws = ws;
-    // …keep the rest of your connectWS() exactly as you have it…
-
 
     ws.addEventListener('open', ()=>{
       appendLog('[PvP] Connected to matchmaking.');
@@ -2302,26 +2475,26 @@ function connectWS(){
 
       if (PVP.myName) ws.send(JSON.stringify({ kind:'set_name', name:PVP.myName }));
 
-      // show lobby on idle
       if (PVP.phase === 'idle') {
         mountLobbyInField();
         ws.send(JSON.stringify({ kind:'list_rooms' }));
       }
 
-      // flush queue
       if (Array.isArray(PVP._outbox)){
         for (const m of PVP._outbox) ws.send(JSON.stringify(m));
         PVP._outbox.length = 0;
       }
+
       if (PVP._wantQueue) ws.send(JSON.stringify({ kind:'queue' }));
       resolve();
     }, { once:true });
 
     ws.addEventListener('close', ()=>{
       appendLog('[PvP] Disconnected.');
-      PVP.enabled=false; PVP.phase='idle';
+      PVP.enabled = false;
+      PVP.phase = 'idle';
       mountRightPanel();
-      _wsOpenPromise=null;
+      _wsOpenPromise = null;
     });
 
     ws.addEventListener('error', (e)=>{
@@ -2329,21 +2502,40 @@ function connectWS(){
       console.error(e);
     });
 
-    ws.addEventListener('message', (ev) => {
-  try {
-    const msg = JSON.parse(ev.data);  // turn the text into an object
-    handleNet(msg);                   // send it to your handler
-  } catch (err) {
-    console.warn('Bad WS message:', ev.data, err);
-  }
-});
+    ws.addEventListener('message', (ev)=>{
+      try {
+        const msg = JSON.parse(ev.data);
+        handleNet(msg);
+      } catch (err) {
+        console.warn('Bad WS message:', ev.data, err);
+      }
+    });
 
-  });
+  }); 
+
   return _wsOpenPromise;
 }
 
 
+// Assign stable netIds so both clients always sort/target the same units
+function assignNetIds(hostUnits, guestUnits){
+  if (!Array.isArray(hostUnits) || !Array.isArray(guestUnits)) return;
+
+  hostUnits.forEach((u,i)=> { if (u) u.netId = `H${i}`; });
+  guestUnits.forEach((u,i)=> { if (u) u.netId = `G${i}`; });
+}
+
 /* ---------- Battle bootstrap after draft (force-rebuild HUD) ---------- */
+
+function assignNetIds(){
+  // Host always gets H0/H1/H2; Guest always gets G0/G1/G2
+  const hostUnits  = (PVP.role === 'host') ? player : enemy;
+  const guestUnits = (PVP.role === 'host') ? enemy  : player;
+
+  hostUnits.forEach((u,i)  => u.netId = `H${i}`);
+  guestUnits.forEach((u,i) => u.netId = `G${i}`);
+}
+
 function startBattleFromDraft(){
   ensureRoundBuf();
 
@@ -2357,12 +2549,9 @@ function startBattleFromDraft(){
   player = (Array.isArray(PVP.picksMe) ? PVP.picksMe : []).map(job => makeUnit(job, 'player'));
   enemy  = (Array.isArray(PVP.picksOpp) ? PVP.picksOpp : []).map(job => makeUnit(job, 'enemy'));
   ensureUnitSides();  // label units as host/guest before scene restart
+assignNetIds(); // assigns netId based on current role
 
-// After you create your 3v3 units:
-function assignNetIds(hostUnits, guestUnits){
-  hostUnits.forEach((u,i)=> u.netId = `H${i}`);
-  guestUnits.forEach((u,i)=> u.netId = `G${i}`);
-}
+
 
   PVP.phase = 'battle';
   PVP._readyForBattle = true; // flag for Scene.create to know we're in battle state
@@ -2387,15 +2576,6 @@ function assignNetIds(hostUnits, guestUnits){
 
 // ============ ROUND SYNC (DROP-IN) ============
 (function(){
-  // Ensure buffers exist on PVP
-  function ensureRoundBuf(){
-    if (!PVP.roundBuf) PVP.roundBuf = { mine:{}, opp:{}, host:{}, guest:{} };
-    PVP.roundBuf.mine  ||= {};
-    PVP.roundBuf.opp   ||= {};
-    PVP.roundBuf.host  ||= {};
-    PVP.roundBuf.guest ||= {};
-  }
-  window.ensureRoundBuf = ensureRoundBuf;
 
   // Convert my local choice to the wire shape
   function choiceToWire(c){
@@ -2572,39 +2752,29 @@ window.showEndOverlay = function(outcome){ // 'win' | 'lose' | 'draw'
     b.onclick = onClick; return b;
   }
 
-  const toLobby = () => {
-    ov.remove();
-    PVP.matchId=null; PVP.role=null; PVP.phase='idle';
-    player=[]; enemy=[];
-    if (game && sceneRef) sceneRef.scene.restart();
-enterLobbyUI(); 
-    if (typeof mountLobbyInField==='function') mountLobbyInField();
-    setTopBarLobby();
+const toLobby = () => {
+  ov.remove();
 
-    // (Optional) Clear any stray unit panels if the scene hasn't rebuilt yet
-    if (sceneRef){
-      sceneRef.playerCol && sceneRef.playerCol.removeAll(true);
-      sceneRef.enemyCol  && sceneRef.enemyCol.removeAll(true);
-    }
-    connectWS().then(()=> send({kind:'list_rooms'}));
-  };
+  // Always reset UI/state locally first
+  returnToLobby();
 
-  const playAgain = () => {
-    ov.remove();
-    PVP.matchId=null; PVP.role=null; PVP.phase='idle';
-    player=[]; enemy=[];
-    if (game && sceneRef) sceneRef.scene.restart();
-enterLobbyUI(); 
-    if (typeof mountLobbyInField==='function') mountLobbyInField();
-    setTopBarLobby();
+  // If connected, refresh rooms; if not, connect then refresh
+  if (PVP.ws && PVP.ws.readyState === WebSocket.OPEN) {
+    send({ kind:'list_rooms' });
+  } else {
+    connectWS().then(() => send({ kind:'list_rooms' }));
+  }
+};
 
-    // (Optional) Clear any stray unit panels if the scene hasn't rebuilt yet
-    if (sceneRef){
-      sceneRef.playerCol && sceneRef.playerCol.removeAll(true);
-      sceneRef.enemyCol  && sceneRef.enemyCol.removeAll(true);
-    }
-    connectWS().then(()=> send({ kind:'queue' }));
-  };
+const playAgain = () => {
+  ov.remove();
+
+  // Reset everything to lobby state first
+  returnToLobby();
+
+  // Then immediately queue
+  connectWS().then(() => send({ kind:'queue' }));
+};
 
   row.appendChild(mk('Return to Lobby', toLobby));
   card.appendChild(row);
@@ -2665,6 +2835,9 @@ function handleNet(msg){
     }
 case 'round_choices': {
   ensureRoundBuf();
+if (!PVP.roundBuf.host || !PVP.roundBuf.guest) {
+  console.warn('[DBG] roundBuf missing host/guest keys', PVP.roundBuf);
+}
   const r  = (typeof msg.round==='number') ? msg.round : roundNumber;
   const ch = Array.isArray(msg.choices) ? msg.choices : [];
 
@@ -2713,14 +2886,14 @@ case 'round_choices': {
   PVP.matchId = PVP.roomId;
 
   PVP.phase = 'draft';
-  PVP.pool = [...ALL_CLASSES];
-  PVP.picksMe = [];
-  PVP.picksOpp = [];
-  PVP.pickCount = 0;
+PVP.pool = [...ALL_CLASSES];
+PVP.picksMe = [];
+PVP.picksOpp = [];
+PVP.pickCount = 0;
 
-  PVP.starter = 'host';
-  const sideTurn = PVP.starter;
-  PVP.pickTurn = (sideTurn === PVP.role) ? 'me' : 'opp';
+// A–B–B–A–B–A: host goes first
+const sideTurn = DRAFT_ORDER[PVP.pickCount]; // 'host'
+PVP.pickTurn = (sideTurn === PVP.role) ? 'me' : 'opp';
 
   unmountLobbyInField && unmountLobbyInField();
   mountDraftUI();
@@ -2740,10 +2913,9 @@ case 'round_choices': {
       }
       PVP.pickCount++;
 
-     // Alternate turns based on who just picked (more reliable than pickCount)
-const justPicked = msg.by; // 'host' or 'guest'
-const nextSide = (justPicked === 'host') ? 'guest' : 'host';
-PVP.pickTurn = (nextSide === PVP.role) ? 'me' : 'opp';
+// Next turn based on A–B–B–A–B–A sequence
+const nextSide = DRAFT_ORDER[PVP.pickCount] || null; // pickCount was incremented already
+PVP.pickTurn = nextSide ? ((nextSide === PVP.role) ? 'me' : 'opp') : null;
 
       updateDraftUI();
 
@@ -2754,34 +2926,7 @@ if (totalPicks >= 6) {
 break;
     }
 
-    // Round wires
-    case 'round_choices': {
-      ensureRoundBuf();
-      const r  = (typeof msg.round === 'number') ? msg.round : roundNumber;
-      const ch = Array.isArray(msg.choices) ? msg.choices : [];
-      let bucket;
-      if (msg.who === 'host' || msg.who === 'guest') {
-        bucket = (msg.who === PVP.role) ? 'mine' : 'opp';
-      } else {
-        const names = ch.map(c => c.actorName);
-        const myNames = (player || []).map(u => u.name);
-        const allIn = (arr,sup)=> arr.length && arr.every(n => sup.includes(n));
-        bucket = allIn(names, myNames) ? 'mine' : 'opp';
-      }
 
-      const existing = PVP.roundBuf[bucket][r];
-      if (JSON.stringify(existing) !== JSON.stringify(ch)) PVP.roundBuf[bucket][r] = ch;
-      if (msg.who === 'host' || msg.who === 'guest') {
-        const sideExisting = PVP.roundBuf[msg.who][r];
-        if (JSON.stringify(sideExisting) !== JSON.stringify(ch)) PVP.roundBuf[msg.who][r] = ch;
-      }
-
-      if (PVP.phase === 'battle' && r === roundNumber &&
-          Array.isArray(PVP.roundBuf.mine[r]) && Array.isArray(PVP.roundBuf.opp[r])){
-        tryResolveRoundWithBothSides(r);
-      }
-      break;
-    }
 
     // Final outcome (flip perspective if needed)
     case 'outcome': {
@@ -2849,7 +2994,10 @@ function getOrCreateDraftOverlay(){
 
   const footer=document.createElement('div');
   Object.assign(footer.style,{padding:'10px 16px',borderTop:'1px solid #3a4257',display:'flex',alignItems:'center',justifyContent:'space-between',fontSize:'12px',opacity:'.85'});
-  footer.innerHTML=`<div>Alternating draft (A–B–A–B–A–B). Battle starts when each player has 3 picks.</div><button id="draft-cancel" class="action-btn" style="padding:6px 10px;">Cancel</button>`;
+  footer.innerHTML = `
+  <div>Draft order: A–B–B–A–B–A. Battle starts when each player has 3 picks.</div>
+  <button id="draft-cancel" class="action-btn" style="padding:6px 10px;">Cancel</button>
+`;
 
   card.appendChild(header); card.appendChild(picksRow); card.appendChild(poolWrap); card.appendChild(footer); ov.appendChild(card); document.body.appendChild(ov);
   document.getElementById('draft-cancel').onclick=()=>{ const ovNow=document.getElementById('draft-overlay'); if (ovNow) ovNow.remove(); };
@@ -2878,88 +3026,106 @@ const JOB_TAGLINES = {
   Barbarian: "Unparalleled raw damage and snowball ability.",
 };
 
-// --- Draft portrait helper (must be global) ---
-function portraitURL(job){
-  const base = (window.SPRITE_BASE_URL || 'https://raw.githubusercontent.com/krezt/tol-assets/main')
-    .replace(/\/+$/,'');
-  return `${base}/portraits/${encodeURIComponent(job)}.png`;
-}
 
 function updateDraftUI(){
-  const turnChip=document.getElementById('turnChip');
-  if (turnChip){ const mine=(PVP.pickTurn==='me'); turnChip.textContent=mine?'Your pick':'Opponent'; turnChip.style.color=mine?'#a7ffb5':'#ffd37a'; }
-  const myP=document.getElementById('myPicks'); const opP=document.getElementById('oppPicks');
-  if (myP) myP.textContent=(PVP.picksMe.join(', ')||'—'); if (opP) opP.textContent=(PVP.picksOpp.join(', ')||'—');
-  const oppTitle = document.getElementById('oppTitle'); if (oppTitle) oppTitle.textContent = PVP.opponentName || 'Opponent';
+  // --- turn chip (now driven by DRAFT_ORDER + pickCount) ---
+  const turnChip = document.getElementById('turnChip');
+  const pickIndex = (PVP.pickCount ?? 0);
+  const sideToPick = DRAFT_ORDER[pickIndex] || null; // 'host' | 'guest' | null when done
+  const mine = !!sideToPick && (sideToPick === PVP.role);
 
-  const pool=document.getElementById('pool'); if(!pool) return;
-  const filter=document.getElementById('draft-filter'); const q=(filter?.value||'').trim().toLowerCase();
-  pool.textContent=''; const remaining=PVP.pool.filter(j=>!q||j.toLowerCase().includes(q));
+  if (turnChip){
+    if (!sideToPick){
+      turnChip.textContent = 'Draft complete';
+      turnChip.style.color = '#a7c4ff';
+    } else {
+      const sideLabel = (sideToPick === 'host') ? 'A' : 'B';
+      turnChip.textContent = mine ? `Your pick (Side ${sideLabel})` : `Opponent (Side ${sideLabel})`;
+      turnChip.style.color = mine ? '#a7ffb5' : '#ffd37a';
+    }
+  }
+
+  // --- picks + opponent name ---
+  const myP = document.getElementById('myPicks');
+  const opP = document.getElementById('oppPicks');
+  if (myP) myP.textContent = (PVP.picksMe.join(', ') || '—');
+  if (opP) opP.textContent = (PVP.picksOpp.join(', ') || '—');
+
+  const oppTitle = document.getElementById('oppTitle');
+  if (oppTitle) oppTitle.textContent = PVP.opponentName || 'Opponent';
+
+  // --- pool + filter ---
+  const pool = document.getElementById('pool');
+  if (!pool) return;
+
+  const filter = document.getElementById('draft-filter');
+  const q = (filter?.value || '').trim().toLowerCase();
+
+  pool.textContent = '';
+  const remaining = (PVP.pool || []).filter(j => !q || j.toLowerCase().includes(q));
+
+  // Can I pick right now?
+  const canPick = mine && (PVP.picksMe.length < 3) && !!sideToPick;
+
   for (const job of remaining){
-  const b = document.createElement('button');
-  b.className = 'action-btn';
+    const b = document.createElement('button');
+    b.className = 'action-btn';
 
-  // Make each button a vertical card
-  Object.assign(b.style, {
-    padding:'10px',
-    textAlign:'left',
-    whiteSpace:'normal',
-    lineHeight:'1.2',
-    display:'flex',
-    flexDirection:'column',
-    gap:'6px',
-    alignItems:'stretch'
-  });
+    // vertical card styling
+    Object.assign(b.style, {
+      padding:'10px',
+      textAlign:'left',
+      whiteSpace:'normal',
+      lineHeight:'1.2',
+      display:'flex',
+      flexDirection:'column',
+      gap:'6px',
+      alignItems:'stretch'
+    });
 
-  // Title
-  const title = document.createElement('div');
-  title.className = 'label';
-  title.textContent = job;
-  Object.assign(title.style, { fontWeight:'800' });
+    // Title
+    const title = document.createElement('div');
+    title.className = 'label';
+    title.textContent = job;
+    Object.assign(title.style, { fontWeight:'800' });
 
-  // One-liner
-  const desc = document.createElement('div');
-  desc.className = 'desc';
-  desc.textContent =
-    (window.CLASS_BLURBS && window.CLASS_BLURBS[job]) ||
-    '—';
-  Object.assign(desc.style, { opacity:'0.9' });
+    // One-liner
+    const desc = document.createElement('div');
+    desc.className = 'desc';
+    desc.textContent = (window.CLASS_BLURBS && window.CLASS_BLURBS[job]) || '—';
+    Object.assign(desc.style, { opacity:'0.9' });
 
-  // Portrait BELOW the text (centered)
-  const img = document.createElement('img');
-  img.src = portraitURL(job);
-  img.alt = job;
-  Object.assign(img.style, {
-    width:'100%',
-    maxWidth:'100px',
-    height:'auto',
-    marginTop:'6px',
-    borderRadius:'8px',
-    objectFit:'cover',
-    border:'1px solid rgba(255,255,255,0.15)',
-    background:'rgba(0,0,0,0.2)',
-    alignSelf:'center'
-  });
-  img.onerror = () => { img.style.display = 'none'; };
+    // Portrait (centered under text)
+    const img = document.createElement('img');
+    img.src = portraitURL(job);
+    img.alt = job;
+    Object.assign(img.style, {
+      width:'100%',
+      maxWidth:'100px',
+      height:'auto',
+      marginTop:'6px',
+      borderRadius:'8px',
+      objectFit:'cover',
+      border:'1px solid rgba(255,255,255,0.15)',
+      background:'rgba(0,0,0,0.2)',
+      alignSelf:'center'
+    });
+    img.onerror = () => { img.style.display = 'none'; };
 
-  b.appendChild(title);
-  b.appendChild(desc);
-  b.appendChild(img);
+    b.appendChild(title);
+    b.appendChild(desc);
+    b.appendChild(img);
 
-  // Enable/disable pick
-  b.disabled = (PVP.pickTurn !== 'me');
-  b.onclick = () => {
-    if (PVP.pickTurn !== 'me') return;
-    if (PVP.picksMe.length >= 3) return;
-    b.disabled = true;
-    send({ kind:'draft_pick', job, by:PVP.role });
-  };
+    // Enable/disable pick based on order + pick cap
+    b.disabled = !canPick;
 
-  pool.appendChild(b);
-}
+    b.onclick = () => {
+      if (!canPick) return;
+      b.disabled = true;
+      send({ kind:'draft_pick', job, by: PVP.role }); // server should broadcast back 'draft_pick'
+    };
 
-  if (!pool.children.length){
-    const empty=document.createElement('div'); empty.style.cssText='opacity:.8;font-size:13px;padding:12px;'; empty.textContent=q?'No classes match your filter.':'No classes remaining.'; pool.appendChild(empty);
+    pool.appendChild(b);
   }
 }
 
@@ -2995,6 +3161,15 @@ function returnToLobby(){
   PVP.roomId = null;
   PVP.role = null;
   PVP._readyForBattle = false;
+PVP._ended = false;
+PVP._resolvingRound = null;
+PVP.sentForRound = null;
+ensureRoundBuf();
+PVP.roundBuf.mine = {};
+PVP.roundBuf.opp  = {};
+PVP.roundBuf.host = {};
+PVP.roundBuf.guest= {};
+
 
   // Clear units so Phaser panels don’t keep drawing old match
   player = [];
@@ -3080,6 +3255,10 @@ function mountLobbyInField(){
   ov.appendChild(list);
 
   root.appendChild(ov);
+
+// keep lobby UI consistent
+enterLobbyUI();
+setTopBarLobby();
 
   // Save name handlers
   const saveName = () => {
